@@ -40,17 +40,44 @@ int main()
 	int n_addr = sizeof(sockaddr_in);
 
 	char buffer[] = "Hello, I'm Server.";
+
+	_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
+	if (INVALID_SOCKET == _sock)
+	{
+		cout << "Error 无效的客户端socket" << endl;
+	}
+	cout << "新客户端socket " << _csock << "IP:" << inet_ntoa(client_addr.sin_addr) << endl;
+
+	char recvbuf[128] = {};
 	while (true)
 	{
-		_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
-		if (INVALID_SOCKET == _sock)
+		// 接受客户端的请求
+		int len = recv(_csock, recvbuf, 128, 0);
+		if (len <= 0)
 		{
-			cout << "Error 无效的客户端socket" << endl;
+			cout << "客户端已经退出，任务结束" << endl;
+			break;
+		}
+		// 处理请求
+		if (0 == strcmp(recvbuf,"getname"))
+		{
+			char msgbuf[] = "Kevin";
+			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
+		}
+		else if (0 == strcmp(recvbuf, "getage"))
+		{
+			char msgbuf[] = "25";
+			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
+		}
+		else
+		{
+			char msgbuf[] = "???";
+			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
 		}
 
 		// 5.发送消息
-		cout <<"新客户端IP:" << inet_ntoa(client_addr.sin_addr)<< endl;
-		send(_csock, buffer, strlen(buffer) + 1, 0);
+		//cout <<"新客户端IP:" << inet_ntoa(client_addr.sin_addr)<< endl;
+		//send(_csock, buffer, strlen(buffer) + 1, 0);
 	}
 	
 
