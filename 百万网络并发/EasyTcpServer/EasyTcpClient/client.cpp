@@ -10,6 +10,13 @@ using namespace std;
 #pragma comment(lib,"ws2_32.lib")
 
 
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
+
+
 int main()
 {
 	// 启动socket 网络环境
@@ -59,7 +66,8 @@ int main()
 		int nlen = recv(_sock, recvbuf, 256, 0);
 		if (nlen > 0)
 		{
-			cout << "接收到数据:" << recvbuf << endl;
+			DataPackage *dp = (DataPackage*)recvbuf;
+			cout << "接收到数据:" << dp->age << ":" << dp->name  << endl;
 		}
 	}
 

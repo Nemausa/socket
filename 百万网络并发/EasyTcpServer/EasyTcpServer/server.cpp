@@ -7,6 +7,11 @@ using namespace std;
 
 #pragma comment(lib,"ws2_32.lib")
 
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 
 int main()
 {
@@ -59,15 +64,10 @@ int main()
 			break;
 		}
 		// 处理请求
-		if (0 == strcmp(recvbuf,"getname"))
+		if (0 == strcmp(recvbuf,"getinfo"))
 		{
-			char msgbuf[] = "Kevin";
-			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
-		}
-		else if (0 == strcmp(recvbuf, "getage"))
-		{
-			char msgbuf[] = "25";
-			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
+			DataPackage dp = {25, "Kevin"};
+			send(_csock,(const char*)&dp, sizeof(DataPackage), 0);
 		}
 		else
 		{
