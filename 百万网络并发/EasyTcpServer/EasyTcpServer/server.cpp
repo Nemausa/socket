@@ -91,9 +91,11 @@ int main()
 	int len_head = sizeof(DataHeader);
 	while (true)
 	{
-		DataHeader head = {};
+		// 缓冲区
+		char recv_buf[1024] = {};
 		// 接受客户端的请求
-		int len = recv(_csock, (char*)&head, sizeof(DataHeader), 0);
+		int len = recv(_csock, recv_buf, sizeof(DataHeader), 0);
+		DataHeader *head = (DataHeader*)recv_buf;
 		if (len <= 0)
 		{
 			cout << "客户端已经退出，任务结束" << endl;
@@ -101,13 +103,13 @@ int main()
 		}
 		
 		// 处理请求
-		switch (head.cmd_)
+		switch (head->cmd_)
 		{
 		case CMD_LOGIN:
 		{
-			Login login = {};
-			recv(_csock, (char*)&login+len_head, sizeof(Login)-len_head, 0);
-			cout << "收到命令：" << head.cmd_ << "数据长度:" << login.length_ << " userName:" << login.username_ <<" passwd:" << login.passwd_ << endl;
+			recv(_csock, recv_buf+len_head, head->length_-len_head, 0);
+			Login *login = (Login*)recv_buf;
+			cout << "收到命令：" << head->cmd_ << "数据长度:" << login->length_ << " userName:" << login->username_ <<" passwd:" << login->passwd_ << endl;
 			// 判断用户密码正确的过程
 			LoginResult ret;
 			send(_csock, (char*)&ret, sizeof(LoginResult), 0);
@@ -115,17 +117,16 @@ int main()
 		break;
 		case CMD_SIGNOUT:
 		{
-			SignOut loginout = {};
-			recv(_csock, (char*)&loginout+len_head, sizeof(SignOut)-len_head, 0);
-			cout << "收到命令：" << head.cmd_ << "数据长度:" << loginout.length_ << " userName:" << loginout.username_  << endl;
+			recv(_csock, recv_buf + len_head, head->length_-len_head, 0);
+			SignOut *loginout = (SignOut*)recv_buf;
+			cout << "收到命令：" << head->cmd_ << "数据长度:" << loginout->length_ << " userName:" << loginout->username_  << endl;
 			// 判断用户密码正确的过程
 			SignOutResult ret = {};
 			send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
 		}
 		break;
 		default:
-			head.cmd_ = CMD_ERROR;
-			head.length_ = 0;
+			DataHeader head = { CMD_ERROR, 0 };
 			send(_csock, (char*)&head, sizeof(DataHeader), 0);
 			break;
 		}
