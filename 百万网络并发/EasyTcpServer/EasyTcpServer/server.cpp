@@ -7,11 +7,40 @@ using namespace std;
 
 #pragma comment(lib,"ws2_32.lib")
 
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN,
+	CMD_SIGNOUT,
+	CMD_ERROR
 };
+
+struct DataHeader
+{
+	short cmd_;
+	short length_;
+};
+
+struct Login
+{
+	char username_[32];
+	char passwd_[32];
+};
+
+struct LoginResult
+{
+	int result_;
+};
+
+struct SignOut
+{
+	char username_[32];
+};
+
+struct SignOutResult
+{
+	int result_;
+};
+
 
 int main()
 {
@@ -51,33 +80,50 @@ int main()
 	{
 		cout << "Error 无效的客户端socket" << endl;
 	}
-	cout << "新客户端socket " << _csock << "IP:" << inet_ntoa(client_addr.sin_addr) << endl;
+	cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
 
-	char recvbuf[128] = {};
+	
 	while (true)
 	{
+		DataHeader head = {};
 		// 接受客户端的请求
-		int len = recv(_csock, recvbuf, 128, 0);
+		int len = recv(_csock, (char*)&head, sizeof(head), 0);
 		if (len <= 0)
 		{
 			cout << "客户端已经退出，任务结束" << endl;
 			break;
 		}
+		cout << "受到命令：" << head.cmd_ << "数据长度:" << head.length_ << endl;
 		// 处理请求
-		if (0 == strcmp(recvbuf,"getinfo"))
+		switch (head.cmd_)
 		{
-			DataPackage dp = {25, "Kevin"};
-			send(_csock,(const char*)&dp, sizeof(DataPackage), 0);
+		case CMD_LOGIN:
+		{
+			Login login = {};
+			recv(_csock, (char*)&login, sizeof(Login), 0);
+			// 判断用户密码正确的过程
+			LoginResult ret = {1};
+			send(_csock, (char*)&head, sizeof(DataHeader), 0);
+			send(_csock, (char*)&ret, sizeof(LoginResult), 0);
 		}
-		else
+		break;
+		case CMD_SIGNOUT:
 		{
-			char msgbuf[] = "???";
-			send(_csock, msgbuf, strlen(msgbuf) + 1, 0);
+			SignOut loginout = {1};
+			recv(_csock, (char*)&loginout, sizeof(SignOut), 0);
+			// 判断用户密码正确的过程
+			SignOutResult ret = {};
+			send(_csock, (char*)&head, sizeof(DataHeader), 0);
+			send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
+		}
+		break;
+		default:
+			head.cmd_ = CMD_ERROR;
+			head.length_ = 0;
+			send(_csock, (char*)&head, sizeof(DataHeader), 0);
+			break;
 		}
 
-		// 5.发送消息
-		//cout <<"新客户端IP:" << inet_ntoa(client_addr.sin_addr)<< endl;
-		//send(_csock, buffer, strlen(buffer) + 1, 0);
 	}
 	
 

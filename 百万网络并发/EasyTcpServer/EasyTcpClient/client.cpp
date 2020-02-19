@@ -10,10 +10,38 @@ using namespace std;
 #pragma comment(lib,"ws2_32.lib")
 
 
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN,
+	CMD_SIGNOUT,
+	CMD_ERROR
+};
+
+struct DataHeader
+{
+	short cmd_;
+	short length_;
+};
+
+struct Login
+{
+	char username_[32];
+	char passwd_[32];
+};
+
+struct LoginResult
+{
+	int result_;
+};
+
+struct SignOut
+{
+	char username_[32];
+};
+
+struct SignOutResult
+{
+	int result_;
 };
 
 
@@ -57,18 +85,40 @@ int main()
 			cout << "c程序退出" << endl;
 			break;
 		}
-		else
-			// 5.向服务器发送请求命令
-			send(_sock, cmdbuf, strlen(cmdbuf)+1, 0);
-
-		// 3.接受服务器发送的信息
-		char recvbuf[256] = {};
-		int nlen = recv(_sock, recvbuf, 256, 0);
-		if (nlen > 0)
+		else if (0 == strcmp(cmdbuf, "login"))
 		{
-			DataPackage *dp = (DataPackage*)recvbuf;
-			cout << "接收到数据:" << dp->age << ":" << dp->name  << endl;
+			Login login = {"Kevin", "passwd"};
+			DataHeader head = { CMD_LOGIN, sizeof(login) };
+			// 向服务器发送请求命令
+			send(_sock, (const char*)&head, sizeof(head), 0);
+			send(_sock, (const char*)&login, sizeof(login), 0);
+			DataHeader ret_head = {};
+			LoginResult ret_login = {};
+			recv(_sock, (char*)&ret_head, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&ret_login, sizeof(LoginResult), 0);
+			cout << "loginresut:" << ret_login.result_ << endl;
 		}
+		else if (0 == strcmp(cmdbuf, "signout"))
+		{
+			SignOut signout = {"Kevin"};
+			DataHeader head = { CMD_SIGNOUT, sizeof(signout) };
+			// 向服务器发送命令
+			send(_sock, (const char*)&head, sizeof(head), 0);
+			send(_sock, (const char*)&signout, sizeof(signout), 0);
+			// 接受服务器返回的数据
+			DataHeader ret_head = {};
+			SignOutResult ret_sign = {};
+			recv(_sock, (char*)&ret_head, sizeof(ret_head), 0);
+			recv(_sock, (char*)&ret_sign, sizeof(ret_sign), 0);
+			cout << "signout: " << ret_sign.result_ << endl;
+		}
+		else
+		{
+			cout << "不支持的命令" << endl;
+		}
+
+		
+		
 	}
 
 	
