@@ -3,8 +3,8 @@
 #include <windows.h>
 #include <WinSock2.h>
 #include <iostream>
+#include <vector>
 using namespace std;
-
 #pragma comment(lib,"ws2_32.lib")
 
 enum CMD
@@ -47,6 +47,9 @@ struct SignOutResult:public DataHeader
 	int result_;
 };
 
+vector<SOCKET> g_clients;
+
+int process(SOCKET _csock);
 
 int main()
 {
@@ -74,68 +77,128 @@ int main()
 		cout << "Error 监听失败" << endl;
 	}
 
-	// 4.等待客户端连接
-	sockaddr_in client_addr = {};
-	SOCKET _csock = INVALID_SOCKET;
-	int n_addr = sizeof(sockaddr_in);
+	
 
-	char buffer[] = "Hello, I'm Server.";
-
-	_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
-	if (INVALID_SOCKET == _sock)
-	{
-		cout << "Error 无效的客户端socket" << endl;
-	}
-	cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
-
-	int len_head = sizeof(DataHeader);
+	
 	while (true)
 	{
-		// 缓冲区
-		char recv_buf[1024] = {};
-		// 接受客户端的请求
-		int len = recv(_csock, recv_buf, sizeof(DataHeader), 0);
-		DataHeader *head = (DataHeader*)recv_buf;
-		if (len <= 0)
-		{
-			cout << "客户端已经退出，任务结束" << endl;
-			break;
-		}
+		// 伯克利 socket
+		//select(
+		//   _In_ int nfds, windows无意义
+		//	_Inout_opt_ fd_set FAR * readfds,		读集合
+		//	_Inout_opt_ fd_set FAR * writefds,		写集合
+		//	_Inout_opt_ fd_set FAR * exceptfds,		错误集合
+		//	_In_opt_ const struct timeval FAR * timeout   空则阻塞下去
+		//	);
+		fd_set fd_read;
+		fd_set fd_write;
+		fd_set fd_except;
 		
-		// 处理请求
-		switch (head->cmd_)
+		FD_ZERO(&fd_read);
+		FD_ZERO(&fd_write);
+		FD_ZERO(&fd_except);
+
+		FD_SET(_sock, &fd_read);
+		FD_SET(_sock, &fd_write);
+		FD_SET(_sock, &fd_except);
+
+		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 		{
-		case CMD_LOGIN:
-		{
-			recv(_csock, recv_buf+len_head, head->length_-len_head, 0);
-			Login *login = (Login*)recv_buf;
-			cout << "收到命令：" << head->cmd_ << "数据长度:" << login->length_ << " userName:" << login->username_ <<" passwd:" << login->passwd_ << endl;
-			// 判断用户密码正确的过程
-			LoginResult ret;
-			send(_csock, (char*)&ret, sizeof(LoginResult), 0);
+			FD_SET(g_clients[n], &fd_read);
 		}
-		break;
-		case CMD_SIGNOUT:
+
+		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
+		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
+		timeval tm = {0, 0};
+		int ret = select(_sock+1, &fd_read, &fd_write, &fd_except, &tm);
+		if (ret < 0)
 		{
-			recv(_csock, recv_buf + len_head, head->length_-len_head, 0);
-			SignOut *loginout = (SignOut*)recv_buf;
-			cout << "收到命令：" << head->cmd_ << "数据长度:" << loginout->length_ << " userName:" << loginout->username_  << endl;
-			// 判断用户密码正确的过程
-			SignOutResult ret = {};
-			send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
-		}
-		break;
-		default:
-			DataHeader head = { CMD_ERROR, 0 };
-			send(_csock, (char*)&head, sizeof(DataHeader), 0);
+			cout << "select任务结束" << endl;
 			break;
 		}
+		if (FD_ISSET(_sock, &fd_read))  // 判断集合是否有可操作的socket
+		{
+			FD_CLR(_sock, &fd_read);
+			// 4.等待客户端连接
+			sockaddr_in client_addr = {};
+			SOCKET _csock = INVALID_SOCKET;
+			int n_addr = sizeof(sockaddr_in);
+
+			char buffer[] = "Hello, I'm Server.";
+
+			_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
+			if (INVALID_SOCKET == _sock)
+			{
+				cout << "Error 无效的客户端socket" << endl;
+			}
+			cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
+			g_clients.push_back(_csock);
+		}
+
+		for (size_t n = 0; n < fd_read.fd_count; n++)
+		{
+			if (-1 == process(fd_read.fd_array[n]))
+			{
+				auto iter = find(g_clients.begin(), g_clients.end(), fd_read.fd_array[n]);
+				if (iter != g_clients.end())
+					g_clients.erase(iter);
+			}
+		}				
 
 	}
 	
 
-	// 6.关闭套接字
+	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+	{
+		closesocket(g_clients[n]);
+	}
+	// 关闭套接字
 	closesocket(_sock);
 	WSACleanup();
+	return 0;
+}
+
+int process(SOCKET _csock)
+{
+	int len_head = sizeof(DataHeader);
+	// 缓冲区
+	char recv_buf[1024] = {};
+	// 接受客户端的请求
+	int len = recv(_csock, recv_buf, sizeof(DataHeader), 0);
+	DataHeader *head = (DataHeader*)recv_buf;
+	if (len <= 0)
+	{
+		cout << "客户端已经退出，任务结束" << endl;
+		return -1;
+	}
+	// 处理请求
+	switch (head->cmd_)
+	{
+	case CMD_LOGIN:
+	{
+		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
+		Login *login = (Login*)recv_buf;
+		cout << "收到命令：" << head->cmd_ << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
+		// 判断用户密码正确的过程
+		LoginResult ret;
+		send(_csock, (char*)&ret, sizeof(LoginResult), 0);
+	}
+	break;
+	case CMD_SIGNOUT:
+	{
+		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
+		SignOut *loginout = (SignOut*)recv_buf;
+		cout << "收到命令：" << head->cmd_ << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
+		// 判断用户密码正确的过程
+		SignOutResult ret = {};
+		send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
+	}
+	break;
+	default:
+		DataHeader head = { CMD_ERROR, 0 };
+		send(_csock, (char*)&head, sizeof(DataHeader), 0);
+		break;
+	}
+
 	return 0;
 }
