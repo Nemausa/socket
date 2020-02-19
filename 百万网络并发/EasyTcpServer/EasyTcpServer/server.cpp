@@ -10,7 +10,9 @@ using namespace std;
 enum CMD
 {
 	CMD_LOGIN,
+	CMD_LOGIN_RESULT,
 	CMD_SIGNOUT,
+	CMD_SIGNOUT_RESULT,
 	CMD_ERROR
 };
 
@@ -20,24 +22,28 @@ struct DataHeader
 	short length_;
 };
 
-struct Login
+struct Login: public DataHeader
 {
+	Login(){cmd_ = CMD_LOGIN; length_ = sizeof(Login);}
 	char username_[32];
 	char passwd_[32];
 };
 
-struct LoginResult
+struct LoginResult:public DataHeader
 {
+	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
 	int result_;
 };
 
-struct SignOut
+struct SignOut:public DataHeader
 {
+	SignOut() { cmd_ = CMD_SIGNOUT, length_ = sizeof(SignOut); }
 	char username_[32];
 };
 
-struct SignOutResult
+struct SignOutResult:public DataHeader
 {
+	SignOutResult() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(SignOutResult); result_ = 0; }
 	int result_;
 };
 
@@ -82,38 +88,38 @@ int main()
 	}
 	cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
 
-	
+	int len_head = sizeof(DataHeader);
 	while (true)
 	{
 		DataHeader head = {};
 		// 接受客户端的请求
-		int len = recv(_csock, (char*)&head, sizeof(head), 0);
+		int len = recv(_csock, (char*)&head, sizeof(DataHeader), 0);
 		if (len <= 0)
 		{
 			cout << "客户端已经退出，任务结束" << endl;
 			break;
 		}
-		cout << "受到命令：" << head.cmd_ << "数据长度:" << head.length_ << endl;
+		
 		// 处理请求
 		switch (head.cmd_)
 		{
 		case CMD_LOGIN:
 		{
 			Login login = {};
-			recv(_csock, (char*)&login, sizeof(Login), 0);
+			recv(_csock, (char*)&login+len_head, sizeof(Login)-len_head, 0);
+			cout << "收到命令：" << head.cmd_ << "数据长度:" << login.length_ << " userName:" << login.username_ <<" passwd:" << login.passwd_ << endl;
 			// 判断用户密码正确的过程
-			LoginResult ret = {1};
-			send(_csock, (char*)&head, sizeof(DataHeader), 0);
+			LoginResult ret;
 			send(_csock, (char*)&ret, sizeof(LoginResult), 0);
 		}
 		break;
 		case CMD_SIGNOUT:
 		{
-			SignOut loginout = {1};
-			recv(_csock, (char*)&loginout, sizeof(SignOut), 0);
+			SignOut loginout = {};
+			recv(_csock, (char*)&loginout+len_head, sizeof(SignOut)-len_head, 0);
+			cout << "收到命令：" << head.cmd_ << "数据长度:" << loginout.length_ << " userName:" << loginout.username_  << endl;
 			// 判断用户密码正确的过程
 			SignOutResult ret = {};
-			send(_csock, (char*)&head, sizeof(DataHeader), 0);
 			send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
 		}
 		break;

@@ -13,7 +13,9 @@ using namespace std;
 enum CMD
 {
 	CMD_LOGIN,
+	CMD_LOGIN_RESULT,
 	CMD_SIGNOUT,
+	CMD_SIGNOUT_RESULT,
 	CMD_ERROR
 };
 
@@ -23,26 +25,31 @@ struct DataHeader
 	short length_;
 };
 
-struct Login
+struct Login : public DataHeader
 {
+	Login() { cmd_ = CMD_LOGIN; length_ = sizeof(Login); }
 	char username_[32];
 	char passwd_[32];
 };
 
-struct LoginResult
+struct LoginResult :public DataHeader
 {
+	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
 	int result_;
 };
 
-struct SignOut
+struct SignOut :public DataHeader
 {
+	SignOut() { cmd_ = CMD_SIGNOUT, length_ = sizeof(SignOut); }
 	char username_[32];
 };
 
-struct SignOutResult
+struct SignOutResult :public DataHeader
 {
+	SignOutResult() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(SignOutResult); result_ = 0; }
 	int result_;
 };
+
 
 
 int main()
@@ -87,28 +94,24 @@ int main()
 		}
 		else if (0 == strcmp(cmdbuf, "login"))
 		{
-			Login login = {"Kevin", "passwd"};
-			DataHeader head = { CMD_LOGIN, sizeof(login) };
+			Login login;
+			strcpy_s(login.username_, "Kevin");
+			strcpy_s(login.passwd_, "passwd");
+
 			// 向服务器发送请求命令
-			send(_sock, (const char*)&head, sizeof(head), 0);
 			send(_sock, (const char*)&login, sizeof(login), 0);
-			DataHeader ret_head = {};
 			LoginResult ret_login = {};
-			recv(_sock, (char*)&ret_head, sizeof(DataHeader), 0);
 			recv(_sock, (char*)&ret_login, sizeof(LoginResult), 0);
 			cout << "loginresut:" << ret_login.result_ << endl;
 		}
 		else if (0 == strcmp(cmdbuf, "signout"))
 		{
-			SignOut signout = {"Kevin"};
-			DataHeader head = { CMD_SIGNOUT, sizeof(signout) };
+			SignOut signout;
+			strcpy_s(signout.username_, "Kevin");
 			// 向服务器发送命令
-			send(_sock, (const char*)&head, sizeof(head), 0);
 			send(_sock, (const char*)&signout, sizeof(signout), 0);
 			// 接受服务器返回的数据
-			DataHeader ret_head = {};
 			SignOutResult ret_sign = {};
-			recv(_sock, (char*)&ret_head, sizeof(ret_head), 0);
 			recv(_sock, (char*)&ret_sign, sizeof(ret_sign), 0);
 			cout << "signout: " << ret_sign.result_ << endl;
 		}
