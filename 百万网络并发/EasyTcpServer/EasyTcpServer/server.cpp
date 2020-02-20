@@ -13,6 +13,7 @@ enum CMD
 	CMD_LOGIN_RESULT,
 	CMD_SIGNOUT,
 	CMD_SIGNOUT_RESULT,
+	CMD_NEW_USER_JOIN,
 	CMD_ERROR
 };
 
@@ -46,6 +47,13 @@ struct SignOutResult:public DataHeader
 	SignOutResult() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(SignOutResult); result_ = 0; }
 	int result_;
 };
+
+struct NewUserJoin :public DataHeader
+{
+	NewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NewUserJoin); id_socket = 0; }
+	int id_socket;
+};
+
 
 vector<SOCKET> g_clients;
 
@@ -109,7 +117,7 @@ int main()
 
 		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
-		timeval tm = {0, 0};
+		timeval tm = {1, 0};
 		int ret = select(_sock+1, &fd_read, &fd_write, &fd_except, &tm);
 		if (ret < 0)
 		{
@@ -131,6 +139,12 @@ int main()
 			{
 				cout << "Error 无效的客户端socket" << endl;
 			}
+			for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+			{
+				NewUserJoin user = {};
+				send(g_clients[n], (const char*)&user, sizeof(NewUserJoin), 0);
+			}
+
 			cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
 			g_clients.push_back(_csock);
 		}
@@ -143,7 +157,9 @@ int main()
 				if (iter != g_clients.end())
 					g_clients.erase(iter);
 			}
-		}				
+		}
+
+		cout << "空闲时间处理其他业务" << endl;
 
 	}
 	
@@ -178,7 +194,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		Login *login = (Login*)recv_buf;
-		cout << "收到命令：" << head->cmd_ << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
+		cout << "收到命令" << head->cmd_ << "socket:" << _csock << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
 		// 判断用户密码正确的过程
 		LoginResult ret;
 		send(_csock, (char*)&ret, sizeof(LoginResult), 0);
@@ -188,7 +204,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		SignOut *loginout = (SignOut*)recv_buf;
-		cout << "收到命令：" << head->cmd_ << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
+		cout << "收到命令" << head->cmd_ << "socket:" << _csock << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
 		// 判断用户密码正确的过程
 		SignOutResult ret = {};
 		send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
