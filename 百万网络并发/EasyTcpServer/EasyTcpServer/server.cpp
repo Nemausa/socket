@@ -1,9 +1,12 @@
 ﻿#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include <windows.h>
 #include <WinSock2.h>
 #include <iostream>
 #include <vector>
+
+
 using namespace std;
 #pragma comment(lib,"ws2_32.lib")
 
@@ -90,9 +93,9 @@ int main()
 	
 	while (true)
 	{
-		// 伯克利 socket
+		// 伯克利套接字 BSD socket
 		//select(
-		//   _In_ int nfds, windows无意义
+		//   _In_ int nfds, windows下无意义
 		//	_Inout_opt_ fd_set FAR * readfds,		读集合
 		//	_Inout_opt_ fd_set FAR * writefds,		写集合
 		//	_Inout_opt_ fd_set FAR * exceptfds,		错误集合
@@ -159,8 +162,6 @@ int main()
 			}
 		}
 
-		cout << "空闲时间处理其他业务" << endl;
-
 	}
 	
 
@@ -218,3 +219,4 @@ int process(SOCKET _csock)
 
 	return 0;
 }
+

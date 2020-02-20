@@ -4,8 +4,10 @@
 #include <windows.h>
 #include <WinSock2.h>
 #include <iostream>
-#include <stdio.h>
 using namespace std;
+#include <stdio.h>
+#include <thread>
+
 
 #pragma comment(lib,"ws2_32.lib")
 
@@ -58,6 +60,41 @@ struct NewUserJoin :public DataHeader
 };
 int process(SOCKET _csock);
 
+bool g_run = true;
+
+void cmd(SOCKET _sock)
+{
+	while (true)
+	{
+		char buffer[256] = {};
+		scanf_s("%s", buffer,256);
+		if (0 == strcmp(buffer, "exit"))
+		{
+			g_run = false;
+			cout << "退出线程" << endl;
+			return;
+		}
+		else if (0 == strcmp(buffer, "login"))
+		{
+			Login login;
+			strcpy_s(login.username_, "Kevin");
+			strcpy_s(login.passwd_, "passwd");
+			send(_sock, (const char*)&login, sizeof(login), 0);
+		}
+		else if (0 == strcmp(buffer, "signout"))
+		{
+			SignOut login;
+			strcpy_s(login.username_, "Kevin");
+			send(_sock, (const char*)&login, sizeof(login), 0);
+		}
+		else
+		{
+			cout << "不支持的命令" << endl;
+		}
+	}
+	
+}
+
 int main()
 {
 	// 启动socket 网络环境
@@ -86,8 +123,10 @@ int main()
 	else
 		cout << "connect success" << endl;
 
+	thread cmd_thread(cmd, _sock);
+	cmd_thread.detach();
 	
-	while (true)
+	while (g_run)
 	{
 		fd_set fd_read;
 		FD_ZERO(&fd_read);
@@ -107,13 +146,7 @@ int main()
 				cout << "select任务结束2" << endl;
 			}
 		}
-		
-		Login login;
-		strcpy_s(login.username_, "Kevin");
-		strcpy_s(login.passwd_, "passwd");
 
-		cout << "空闲时间处理其他业务" << endl;
-		send(_sock, (const char*)&login, sizeof(Login), 0);
 		Sleep(1000);
 	}
 
@@ -146,21 +179,21 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		LoginResult *login = (LoginResult*)recv_buf;
-		cout << "收到命令:CMD_LOGIN_RESULT" << head->cmd_ << "socket:" << _csock << "数据长度:" << login->length_ << endl;
+		cout << "收到命令:CMD_LOGIN_RESULT"<< "数据长度:" << login->length_ << endl;
 	}
 	break;
 	case CMD_SIGNOUT_RESULT:
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		SignOutResult *loginout = (SignOutResult*)recv_buf;
-		cout << "收到命令:CMD_SIGNOUT_RESULT" << head->cmd_ << "socket:" << _csock << "数据长度:" << loginout->length_ << endl;
+		cout << "收到命令:CMD_SIGNOUT_RESULT"  << "数据长度:" << loginout->length_ << endl;
 	}
 	break;
 	case  CMD_NEW_USER_JOIN:
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		NewUserJoin *user = (NewUserJoin*)recv_buf;
-		cout << "收到命令:CMD_NEW_USER_JOIN"<< "socket:" << _csock << "数据长度:" << user->length_ << endl;
+		cout << "收到命令:CMD_NEW_USER_JOIN"<< "数据长度:" << user->length_ << endl;
 	} 
 	break;
 	default:
