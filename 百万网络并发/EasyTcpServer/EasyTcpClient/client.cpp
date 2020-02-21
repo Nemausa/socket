@@ -1,8 +1,20 @@
-﻿#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿
 
-#include <windows.h>
-#include <WinSock2.h>
+#ifdef _WIN32
+	#define _CRT_SECURE_NO_WARNINGS
+	#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#include <windows.h>
+	#include <WinSock2.h>
+#else
+	#include <unistd.h>  // unix std
+	#include <arpa/inet.h>
+	#include <string.h>
+	#define SOCKET int
+	#define INVALID_SOCKET  (SOCKET)(~0)
+	#define SOCKET_ERROR            (-1)
+#endif
+
 #include <iostream>
 using namespace std;
 #include <stdio.h>
@@ -67,7 +79,7 @@ void cmd(SOCKET _sock)
 	while (true)
 	{
 		char buffer[256] = {};
-		scanf_s("%s", buffer,256);
+		scanf("%s", buffer);
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
@@ -77,14 +89,14 @@ void cmd(SOCKET _sock)
 		else if (0 == strcmp(buffer, "login"))
 		{
 			Login login;
-			strcpy_s(login.username_, "Kevin");
-			strcpy_s(login.passwd_, "passwd");
+			strcpy(login.username_, "Kevin");
+			strcpy(login.passwd_, "passwd");
 			send(_sock, (const char*)&login, sizeof(login), 0);
 		}
 		else if (0 == strcmp(buffer, "signout"))
 		{
 			SignOut login;
-			strcpy_s(login.username_, "Kevin");
+			strcpy(login.username_, "Kevin");
 			send(_sock, (const char*)&login, sizeof(login), 0);
 		}
 		else
@@ -97,11 +109,12 @@ void cmd(SOCKET _sock)
 
 int main()
 {
+#ifdef _WIN32
 	// 启动socket 网络环境
 	WORD version = MAKEWORD(2, 2);
 	WSADATA dat;
 	WSAStartup(version, &dat);
-
+#endif
 	// 建立一个TCP客户端
 	// 1.建立一个socket
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -115,7 +128,11 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);
-	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#ifdef _WIN32
+	_sin.sin_addr.S_un.S_addr = inet_addr("149.28.194.79");
+#else
+	_sin.sin_addr.s_addr = inet_addr("27.38.12.2");
+#endif
 	if (SOCKET_ERROR == connect(_sock, (sockaddr*)&_sin, sizeof(sockaddr)))
 	{
 		cout << "connect error" << endl;
@@ -147,14 +164,16 @@ int main()
 			}
 		}
 
-		Sleep(1000);
 	}
 
 	cout << "已经退出" << endl;
-
+#ifdef _WIN32
 	// 4.关闭套接字
 	closesocket(_sock);
 	WSACleanup();
+#else
+	close(_sock);
+#endif
 	getchar();
 	return 0;
 }
