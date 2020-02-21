@@ -1,14 +1,28 @@
-﻿#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿
 
-#include <windows.h>
-#include <WinSock2.h>
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#include <windows.h>
+	#include <WinSock2.h>
+	#pragma comment(lib,"ws2_32.lib")
+#else//#elif __APPLE__
+	#include <unistd.h>  // unix std
+	#include <arpa/inet.h>
+	#include <string.h>
+	#define SOCKET int
+	#define INVALID_SOCKET  (SOCKET)(~0)
+	#define SOCKET_ERROR            (-1)
+
+//#else
+//#   error "Unknown compiler"
+#endif
+
 #include <iostream>
 #include <vector>
 
-
 using namespace std;
-#pragma comment(lib,"ws2_32.lib")
+
 
 enum CMD
 {
@@ -64,11 +78,12 @@ int process(SOCKET _csock);
 
 int main()
 {
+#ifdef _WIN32
 	// 启动socket 网络环境
 	WORD version = MAKEWORD(2, 2);
 	WSADATA dat;
 	WSAStartup(version, &dat);
-
+#endif
 	// 建立一个TCP服务器
 	// 1.建立一个socket
 	SOCKET _sock = socket(AF_INET/*IPV4*/, SOCK_STREAM/*数据流*/, IPPROTO_TCP);
@@ -76,17 +91,30 @@ int main()
 	sockaddr_in _sin = {};
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);
+#ifdef _WIN32
 	_sin.sin_addr.S_un.S_addr = INADDR_ANY; //inet_addr("127.0.0.1");
+#else
+	_sin.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1");
+#endif
 	int bs = bind(_sock, (sockaddr*)&_sin, sizeof(_sin));
 	if (SOCKET_ERROR == bs)
 	{
 		cout << "Error 绑定错误" << endl;
+	}
+	else
+	{
+		cout << "bind success" << endl;
 	}
 	// 3.监听网络端口
 	if (SOCKET_ERROR == listen(_sock, 5))
 	{
 		cout << "Error 监听失败" << endl;
 	}
+	else
+	{
+		cout << "listen success" << endl;
+	}
+
 
 	
 
@@ -113,15 +141,20 @@ int main()
 		FD_SET(_sock, &fd_write);
 		FD_SET(_sock, &fd_except);
 
+		SOCKET max_socket = _sock;
 		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 		{
 			FD_SET(g_clients[n], &fd_read);
+			if (max_socket < g_clients[n])
+				max_socket = g_clients[n];
 		}
+
+		
 
 		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 		timeval tm = {1, 0};
-		int ret = select(_sock+1, &fd_read, &fd_write, &fd_except, &tm);
+		int ret = select(max_socket+1, &fd_read, &fd_write, &fd_except, &tm);
 		if (ret < 0)
 		{
 			cout << "select任务结束" << endl;
@@ -136,8 +169,11 @@ int main()
 			int n_addr = sizeof(sockaddr_in);
 
 			char buffer[] = "Hello, I'm Server.";
-
+#ifdef _WIN32
 			_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
+#else
+			_csock = accept(_sock, (sockaddr*)&client_addr, (socklen_t*)&n_addr);
+#endif
 			if (INVALID_SOCKET == _sock)
 			{
 				cout << "Error 无效的客户端socket" << endl;
@@ -152,19 +188,32 @@ int main()
 			g_clients.push_back(_csock);
 		}
 
-		for (size_t n = 0; n < fd_read.fd_count; n++)
+		//for (size_t n = 0; n < fd_read.fd_count; n++)
+		//{
+		//	if (-1 == process(fd_read.fd_array[n]))
+		//	{
+		//		auto iter = find(g_clients.begin(), g_clients.end(), fd_read.fd_array[n]);
+		//		if (iter != g_clients.end())
+		//			g_clients.erase(iter);
+		//	}
+		//}
+		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 		{
-			if (-1 == process(fd_read.fd_array[n]))
+			if (FD_ISSET(g_clients[n], &fd_read))
 			{
-				auto iter = find(g_clients.begin(), g_clients.end(), fd_read.fd_array[n]);
-				if (iter != g_clients.end())
-					g_clients.erase(iter);
+				if (-1 == process(g_clients[n]))
+				{
+					auto iter = g_clients.begin()+n;
+					if (iter != g_clients.end())
+						g_clients.erase(iter);
+
+				}
 			}
 		}
 
 	}
 	
-
+#ifdef _WIN32
 	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 	{
 		closesocket(g_clients[n]);
@@ -172,6 +221,13 @@ int main()
 	// 关闭套接字
 	closesocket(_sock);
 	WSACleanup();
+#else
+	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
+	{
+		close(g_clients[n]);
+	}
+	close(_sock);
+#endif
 	return 0;
 }
 
@@ -181,11 +237,11 @@ int process(SOCKET _csock)
 	// 缓冲区
 	char recv_buf[1024] = {};
 	// 接受客户端的请求
-	int len = recv(_csock, recv_buf, sizeof(DataHeader), 0);
+	int len = (int)recv(_csock, recv_buf, sizeof(DataHeader), 0);
 	DataHeader *head = (DataHeader*)recv_buf;
 	if (len <= 0)
 	{
-		cout << "客户端已经退出，任务结束" << endl;
+		cout << "客户端" << (int)_csock <<"已经退出，任务结束" << endl;
 		return -1;
 	}
 	// 处理请求
