@@ -154,7 +154,7 @@ int main()
 		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 		timeval tm = {1, 0};
-		int ret = select(max_socket+1, &fd_read, &fd_write, &fd_except, &tm);
+		int ret = select(max_socket+1, &fd_read, &fd_write, &fd_except, NULL);
 		if (ret < 0)
 		{
 			cout << "select任务结束" << endl;
@@ -251,7 +251,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		Login *login = (Login*)recv_buf;
-		cout << "收到命令" << head->cmd_ << "socket:" << _csock << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
+		cout << "收到命令CMD_LOGIN" << "socket:" << _csock << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
 		// 判断用户密码正确的过程
 		LoginResult ret;
 		send(_csock, (char*)&ret, sizeof(LoginResult), 0);
@@ -261,7 +261,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		SignOut *loginout = (SignOut*)recv_buf;
-		cout << "收到命令" << head->cmd_ << "socket:" << _csock << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
+		cout << "收到命令CMD_SIGNOUT" << "socket:" << _csock << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
 		// 判断用户密码正确的过程
 		SignOutResult ret = {};
 		send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
