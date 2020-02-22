@@ -1,4 +1,4 @@
-﻿#include "TcpClient.hpp"
+﻿#include "tcp_client.hpp"
 
 
 
@@ -43,18 +43,15 @@ int main()
 {
 	TcpClient client1;
 	client1.init_socket();
-	client1.connect_server("149.28.194.79", 4567);
-	
-	TcpClient client2;
-	client2.init_socket();
-	client2.connect_server("167.179.105.207", 4567);
+	client1.connect_server("127.0.0.1", 4568);
 
-	TcpClient client3;
-	client3.init_socket();
-	client3.connect_server("127.0.0.1", 4567);
+	//TcpClient client2;
+	//client2.init_socket();
+	//client2.connect_server("127.0.0.1", 4567);
 
-	//thread cmd_thread1(cmd, &client1);
-	//cmd_thread1.detach();
+
+	thread cmd_thread1(cmd, &client1);
+	cmd_thread1.detach();
 
 	//thread cmd_thread2(cmd, &client2);
 	//cmd_thread2.detach();
@@ -62,18 +59,15 @@ int main()
 	Login login;
 	strcpy(login.username_, "Kevin");
 	strcpy(login.passwd_, "passwd");
-	
-	while (client1.is_run() || client2.is_run() )
+
+	while (client1.is_run())
 	{
 		client1.on_run();
-		client2.on_run();
-		client1.send_data(&login);
-		client2.send_data(&login);
-		client3.send_data(&login);
+		//client2.on_run();
 	}
 
 	client1.close_socket();
-	client2.close_socket();
+	//client2.close_socket();
 	cout << "exited" << endl;
 
 	getchar();

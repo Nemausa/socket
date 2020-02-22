@@ -1,278 +1,29 @@
-﻿
-
-#ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
-	#define _WINSOCK_DEPRECATED_NO_WARNINGS
-	#include <windows.h>
-	#include <WinSock2.h>
-	#pragma comment(lib,"ws2_32.lib")
-#else//#elif __APPLE__
-	#include <unistd.h>  // unix std
-	#include <arpa/inet.h>
-	#include <string.h>
-	#define SOCKET int
-	#define INVALID_SOCKET  (SOCKET)(~0)
-	#define SOCKET_ERROR            (-1)
-
-//#else
-//#   error "Unknown compiler"
-#endif
-
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
-
 using namespace std;
+#include "tcp_server.hpp"
 
-
-enum CMD
-{
-	CMD_LOGIN,
-	CMD_LOGIN_RESULT,
-	CMD_SIGNOUT,
-	CMD_SIGNOUT_RESULT,
-	CMD_NEW_USER_JOIN,
-	CMD_ERROR
-};
-
-struct DataHeader
-{
-	short cmd_;
-	short length_;
-};
-
-struct Login: public DataHeader
-{
-	Login(){cmd_ = CMD_LOGIN; length_ = sizeof(Login);}
-	char username_[32];
-	char passwd_[32];
-};
-
-struct LoginResult:public DataHeader
-{
-	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
-	int result_;
-};
-
-struct SignOut:public DataHeader
-{
-	SignOut() { cmd_ = CMD_SIGNOUT, length_ = sizeof(SignOut); }
-	char username_[32];
-};
-
-struct SignOutResult:public DataHeader
-{
-	SignOutResult() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(SignOutResult); result_ = 0; }
-	int result_;
-};
-
-struct NewUserJoin :public DataHeader
-{
-	NewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NewUserJoin); id_socket = 0; }
-	int id_socket;
-};
-
-
-vector<SOCKET> g_clients;
-
-int process(SOCKET _csock);
 
 int main()
 {
-#ifdef _WIN32
-	// 启动socket 网络环境
-	WORD version = MAKEWORD(2, 2);
-	WSADATA dat;
-	WSAStartup(version, &dat);
-#endif
-	// 建立一个TCP服务器
-	// 1.建立一个socket
-	SOCKET _sock = socket(AF_INET/*IPV4*/, SOCK_STREAM/*数据流*/, IPPROTO_TCP);
-	// 2.bind 绑定用于接受客户端的网络端口
-	sockaddr_in _sin = {};
-	_sin.sin_family = AF_INET;
-	_sin.sin_port = htons(4567);
-#ifdef _WIN32
-	_sin.sin_addr.S_un.S_addr = INADDR_ANY; //inet_addr("127.0.0.1");
-#else
-	_sin.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1");
-#endif
-	int bs = bind(_sock, (sockaddr*)&_sin, sizeof(_sin));
-	if (SOCKET_ERROR == bs)
-	{
-		cout << "bind error" << endl;
+	TcpServer server1;
+	server1.init_socket();
+	server1.bind_port(nullptr, 4567);
+	server1.listen_port(5);
+
+	TcpServer server2;
+	server2.init_socket();
+	server2.bind_port(nullptr, 4568);
+	server2.listen_port(5);
+
+	while (server1.is_run() || server2.is_run())
+	{	
+		server1.on_run();
+		server2.on_run();
 	}
-	else
-	{
-		cout << "bind success" << endl;
-	}
-	// 3.监听网络端口
-	if (SOCKET_ERROR == listen(_sock, 5))
-	{
-		cout << "listen error" << endl;
-	}
-	else
-	{
-		cout << "listen success" << endl;
-	}
-
-
-	
-
-	
-	while (true)
-	{
-		// 伯克利套接字 BSD socket
-		//select(
-		//   _In_ int nfds, windows下无意义
-		//	_Inout_opt_ fd_set FAR * readfds,		读集合
-		//	_Inout_opt_ fd_set FAR * writefds,		写集合
-		//	_Inout_opt_ fd_set FAR * exceptfds,		错误集合
-		//	_In_opt_ const struct timeval FAR * timeout   空则阻塞下去
-		//	);
-		fd_set fd_read;
-		fd_set fd_write;
-		fd_set fd_except;
-		
-		FD_ZERO(&fd_read);
-		FD_ZERO(&fd_write);
-		FD_ZERO(&fd_except);
-
-		FD_SET(_sock, &fd_read);
-		FD_SET(_sock, &fd_write);
-		FD_SET(_sock, &fd_except);
-
-		SOCKET max_socket = _sock;
-		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
-		{
-			FD_SET(g_clients[n], &fd_read);
-			if (max_socket < g_clients[n])
-				max_socket = g_clients[n];
-		}
-
-		
-
-		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
-		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
-		timeval tm = {1, 0};
-		int ret = select(max_socket+1, &fd_read, &fd_write, &fd_except, NULL);
-		if (ret < 0)
-		{
-			cout << "select ends" << endl;
-			break;
-		}
-		if (FD_ISSET(_sock, &fd_read))  // 判断集合是否有可操作的socket
-		{
-			FD_CLR(_sock, &fd_read);
-			// 4.等待客户端连接
-			sockaddr_in client_addr = {};
-			SOCKET _csock = INVALID_SOCKET;
-			int n_addr = sizeof(sockaddr_in);
-
-			char buffer[] = "Hello, I'm Server.";
-#ifdef _WIN32
-			_csock = accept(_sock, (sockaddr*)&client_addr, &n_addr);
-#else
-			_csock = accept(_sock, (sockaddr*)&client_addr, (socklen_t*)&n_addr);
-#endif
-			if (INVALID_SOCKET == _sock)
-			{
-				cout << "Error invalid socket" << endl;
-			}
-			for (int n = (int)g_clients.size() - 1; n >= 0; n--)
-			{
-				NewUserJoin user = {};
-				send(g_clients[n], (const char*)&user, sizeof(NewUserJoin), 0);
-			}
-
-			cout << "new client socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
-			g_clients.push_back(_csock);
-		}
-
-		//for (size_t n = 0; n < fd_read.fd_count; n++)
-		//{
-		//	if (-1 == process(fd_read.fd_array[n]))
-		//	{
-		//		auto iter = find(g_clients.begin(), g_clients.end(), fd_read.fd_array[n]);
-		//		if (iter != g_clients.end())
-		//			g_clients.erase(iter);
-		//	}
-		//}
-		for (int n = (int)g_clients.size() - 1; n >= 0; n--)
-		{
-			if (FD_ISSET(g_clients[n], &fd_read))
-			{
-				if (-1 == process(g_clients[n]))
-				{
-					auto iter = g_clients.begin()+n;
-					if (iter != g_clients.end())
-						g_clients.erase(iter);
-
-				}
-			}
-		}
-
-	}
-	
-#ifdef _WIN32
-	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
-	{
-		closesocket(g_clients[n]);
-	}
-	// 关闭套接字
-	closesocket(_sock);
-	WSACleanup();
-#else
-	for (int n = (int)g_clients.size() - 1; n >= 0; n--)
-	{
-		close(g_clients[n]);
-	}
-	close(_sock);
-#endif
-	return 0;
-}
-
-int process(SOCKET _csock)
-{
-	int len_head = sizeof(DataHeader);
-	// 缓冲区
-	char recv_buf[1024] = {};
-	// 接受客户端的请求
-	int len = (int)recv(_csock, recv_buf, sizeof(DataHeader), 0);
-	DataHeader *head = (DataHeader*)recv_buf;
-	if (len <= 0)
-	{
-		cout << "client:" << (int)_csock <<"exited" << endl;
-		return -1;
-	}
-	// 处理请求
-	switch (head->cmd_)
-	{
-	case CMD_LOGIN:
-	{
-		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
-		Login *login = (Login*)recv_buf;
-		cout << "command CMD_LOGIN" << "socket:" << _csock << " data length :" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
-		// 判断用户密码正确的过程
-		LoginResult ret;
-		send(_csock, (char*)&ret, sizeof(LoginResult), 0);
-	}
-	break;
-	case CMD_SIGNOUT:
-	{
-		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
-		SignOut *loginout = (SignOut*)recv_buf;
-		cout << "command CMD_SIGNOUT" << "socket:" << _csock << " data length :" << loginout->length_ << " userName:" << loginout->username_ << endl;
-		// 判断用户密码正确的过程
-		SignOutResult ret = {};
-		send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
-	}
-	break;
-	default:
-		DataHeader head = { CMD_ERROR, 0 };
-		send(_csock, (char*)&head, sizeof(DataHeader), 0);
-		break;
-	}
-
+	server1.close_socket();
+	server2.close_socket();
+	printf("已退出\n");
 	return 0;
 }
 

@@ -167,7 +167,7 @@ public:
 	}
 
 	// 响应网络消息
-	void on_net_msg(DataHeader *head)
+	virtual void on_net_msg(DataHeader *head)
 	{
 		// 处理请求
 		switch (head->cmd_)

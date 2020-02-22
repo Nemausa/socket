@@ -20,10 +20,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TcpClient.hpp">
+    <ClInclude Include="message.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="message.hpp">
+    <ClInclude Include="tcp_client.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
