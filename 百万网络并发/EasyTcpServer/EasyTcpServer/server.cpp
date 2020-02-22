@@ -99,7 +99,7 @@ int main()
 	int bs = bind(_sock, (sockaddr*)&_sin, sizeof(_sin));
 	if (SOCKET_ERROR == bs)
 	{
-		cout << "Error 绑定错误" << endl;
+		cout << "bind error" << endl;
 	}
 	else
 	{
@@ -108,7 +108,7 @@ int main()
 	// 3.监听网络端口
 	if (SOCKET_ERROR == listen(_sock, 5))
 	{
-		cout << "Error 监听失败" << endl;
+		cout << "listen error" << endl;
 	}
 	else
 	{
@@ -157,7 +157,7 @@ int main()
 		int ret = select(max_socket+1, &fd_read, &fd_write, &fd_except, NULL);
 		if (ret < 0)
 		{
-			cout << "select任务结束" << endl;
+			cout << "select ends" << endl;
 			break;
 		}
 		if (FD_ISSET(_sock, &fd_read))  // 判断集合是否有可操作的socket
@@ -176,7 +176,7 @@ int main()
 #endif
 			if (INVALID_SOCKET == _sock)
 			{
-				cout << "Error 无效的客户端socket" << endl;
+				cout << "Error invalid socket" << endl;
 			}
 			for (int n = (int)g_clients.size() - 1; n >= 0; n--)
 			{
@@ -184,7 +184,7 @@ int main()
 				send(g_clients[n], (const char*)&user, sizeof(NewUserJoin), 0);
 			}
 
-			cout << "新客户端socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
+			cout << "new client socket " << _csock << "IP: " << inet_ntoa(client_addr.sin_addr) << endl;
 			g_clients.push_back(_csock);
 		}
 
@@ -241,7 +241,7 @@ int process(SOCKET _csock)
 	DataHeader *head = (DataHeader*)recv_buf;
 	if (len <= 0)
 	{
-		cout << "客户端" << (int)_csock <<"已经退出，任务结束" << endl;
+		cout << "client:" << (int)_csock <<"exited" << endl;
 		return -1;
 	}
 	// 处理请求
@@ -251,7 +251,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		Login *login = (Login*)recv_buf;
-		cout << "收到命令CMD_LOGIN" << "socket:" << _csock << "数据长度:" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
+		cout << "command CMD_LOGIN" << "socket:" << _csock << " data length :" << login->length_ << " userName:" << login->username_ << " passwd:" << login->passwd_ << endl;
 		// 判断用户密码正确的过程
 		LoginResult ret;
 		send(_csock, (char*)&ret, sizeof(LoginResult), 0);
@@ -261,7 +261,7 @@ int process(SOCKET _csock)
 	{
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		SignOut *loginout = (SignOut*)recv_buf;
-		cout << "收到命令CMD_SIGNOUT" << "socket:" << _csock << "数据长度:" << loginout->length_ << " userName:" << loginout->username_ << endl;
+		cout << "command CMD_SIGNOUT" << "socket:" << _csock << " data length :" << loginout->length_ << " userName:" << loginout->username_ << endl;
 		// 判断用户密码正确的过程
 		SignOutResult ret = {};
 		send(_csock, (char*)&ret, sizeof(SignOutResult), 0);

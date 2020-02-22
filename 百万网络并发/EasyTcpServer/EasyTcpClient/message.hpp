@@ -1,4 +1,19 @@
-﻿#pragma once
+﻿#ifndef MESSAGE_HPP_
+#define MESSAGE_HPP_
+
+/**
+* @file meaasge.hpp
+*
+* @brief This message displayed in Doxygen Files index
+*
+* @ingroup PackageName
+* (note: this needs exactly one @defgroup somewhere)
+*
+* @date	2020-02-21
+* @author Kevin
+* contact: tappanmorris@outlook.com
+*
+*/
 
 enum CMD
 {
@@ -46,3 +61,5 @@ struct NewUserJoin :public DataHeader
 	NewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NewUserJoin); id_socket = 0; }
 	int id_socket;
 };
+
+#endif

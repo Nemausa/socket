@@ -1,5 +1,5 @@
-﻿#ifndef EasyTcpClient_hpp_
-#define EasyTcpClient_hpp_
+﻿#ifndef TCPCLIENT_HPP_
+#define TCPCLIENT_HPP_
 
 #ifdef _WIN32
 	#define _CRT_SECURE_NO_WARNINGS
@@ -54,7 +54,7 @@ public:
 		// 1.建立一个socket
 		if (INVALID_SOCKET != sock_)
 		{
-			cout << "关闭旧的socket连接" << endl;
+			cout << "close old socket" << endl;
 			close_socket();
 		}
 		sock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -68,7 +68,7 @@ public:
 	}
 
 	// 连接服务器
-	int connect_server(char* ip, unsigned short port)
+	int connect_server(const char* ip, unsigned short port)
 	{
 		if (INVALID_SOCKET == sock_)
 		{
@@ -84,10 +84,10 @@ public:
 #endif
 		if (SOCKET_ERROR == connect(sock_, (sockaddr*)&_sin, sizeof(sockaddr)))
 		{
-			cout << "connect error" << endl;
+			cout << "socket=" << sock_ <<"ip" << ip <<"port="<< port << "connect error" << endl;
 		}
 		else
-			cout << "connect success" << endl;
+			cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;
 
 		return 1;
 	}
@@ -102,7 +102,7 @@ public:
 		closesocket(sock_);
 		WSACleanup();
 #else
-		close(_sock);
+		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
 	}
@@ -118,11 +118,12 @@ public:
 		FD_ZERO(&fd_read);
 		FD_SET(sock_, &fd_read);
 
-		timeval tm = { 1, 0 };
+		timeval tm = { 0, 0 };
 		int ret = select(sock_, &fd_read, 0, 0, &tm);
 		if (ret < 0)
 		{
-			cout << "select任务结束1" << endl;
+			cout << "select taks ends 1" << endl;
+			close_socket();
 			return false;
 		}
 		if (FD_ISSET(sock_, &fd_read))
@@ -130,7 +131,8 @@ public:
 			FD_CLR(sock_, &fd_read);
 			if (-1 == recv_data(sock_))
 			{
-				cout << "select任务结束2" << endl;
+				cout << "select task ends 2" << endl;
+				close_socket();
 				return false;
 			}
 		}
@@ -155,7 +157,7 @@ public:
 		DataHeader *head = (DataHeader*)recv_buf;
 		if (len <= 0)
 		{
-			cout << "与服务器端口连接，任务结束" << endl;
+			cout << "the task ends" << endl;
 			return -1;
 		}
 		recv(sock_, recv_buf + len_head, head->length_ - len_head, 0);
@@ -173,19 +175,19 @@ public:
 		case CMD_LOGIN_RESULT:
 		{
 			LoginResult *login = (LoginResult*)head;
-			cout << "收到命令:CMD_LOGIN_RESULT" << "数据长度:" << login->length_ << endl;
+			cout << "socket=" << sock_ << "command:CMD_LOGIN_RESULT" << "data length:" << login->length_ << endl;
 		}
 		break;
 		case CMD_SIGNOUT_RESULT:
 		{
 			SignOutResult *loginout = (SignOutResult*)head;
-			cout << "收到命令:CMD_SIGNOUT_RESULT" << "数据长度:" << loginout->length_ << endl;
+			cout << "socket=" << sock_ << "command:CMD_SIGNOUT_RESULT" << "data length:" << loginout->length_ << endl;
 		}
 		break;
 		case  CMD_NEW_USER_JOIN:
 		{
 			NewUserJoin *user = (NewUserJoin*)head;
-			cout << "收到命令:CMD_NEW_USER_JOIN" << "数据长度:" << user->length_ << endl;
+			cout << "socket=" << sock_ << "command:CMD_NEW_USER_JOIN" << "data length:" << user->length_ << endl;
 		}
 		break;
 		default:
