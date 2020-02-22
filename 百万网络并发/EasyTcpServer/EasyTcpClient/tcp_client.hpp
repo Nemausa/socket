@@ -22,12 +22,12 @@ using namespace std;
 #include <stdio.h>
 #include <thread>
 #include "message.hpp"
-
+#include <mutex>
 class TcpClient
 {
 public:
 	SOCKET sock_;
-
+	mutex mutex_;
 public:
 	TcpClient()
 	{
@@ -82,21 +82,24 @@ public:
 #else
 		_sin.sin_addr.s_addr = inet_addr(ip);
 #endif
-		if (SOCKET_ERROR == connect(sock_, (sockaddr*)&_sin, sizeof(sockaddr)))
+		int ret = connect(sock_, (sockaddr*)&_sin, sizeof(sockaddr));
+		if (SOCKET_ERROR == ret)
 		{
 			cout << "socket=" << sock_ <<"ip" << ip <<"port="<< port << "connect error" << endl;
 		}
 		else
 			cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;
 
-		return 1;
+		return ret;
 	}
 
 	// 关闭socket
 	void close_socket()
 	{
+		
 		if (INVALID_SOCKET == sock_)
 			return;
+		
 #ifdef _WIN32
 		// 4.关闭套接字
 		closesocket(sock_);
@@ -108,6 +111,7 @@ public:
 	}
 
 
+	int count_ = 0;
 	// 处理网络消息
 	bool on_run()
 	{
@@ -119,7 +123,8 @@ public:
 		FD_SET(sock_, &fd_read);
 
 		timeval tm = { 0, 0 };
-		int ret = select(sock_, &fd_read, 0, 0, &tm);
+		int ret = select(sock_+1, &fd_read, 0, 0, &tm);
+		printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
 			cout << "select taks ends 1" << endl;
@@ -146,22 +151,24 @@ public:
 		return INVALID_SOCKET != sock_;
 	}
 
+	// 缓冲区
+	char recv_buf[409600] = {};
 	// 接受数据 处理粘包 拆包
 	int recv_data(SOCKET _csock)
 	{
 		int len_head = sizeof(DataHeader);
-		// 缓冲区
-		char recv_buf[1024] = {};
+		
 		// 接受客户端的请求
-		int len = recv(sock_, recv_buf, sizeof(DataHeader), 0);
-		DataHeader *head = (DataHeader*)recv_buf;
+		int len = recv(sock_, recv_buf, 409600, 0);
+		printf("len=<%d>\n", len);
+		/*DataHeader *head = (DataHeader*)recv_buf;
 		if (len <= 0)
 		{
 			cout << "the task ends" << endl;
 			return -1;
 		}
 		recv(sock_, recv_buf + len_head, head->length_ - len_head, 0);
-		on_net_msg(head);
+		on_net_msg(head);*/
 
 		return 0;
 	}

@@ -42,6 +42,7 @@ struct LoginResult :public DataHeader
 {
 	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
 	int result_;
+	char data[1024];
 };
 
 struct SignOut :public DataHeader

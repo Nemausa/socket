@@ -41,10 +41,16 @@ void cmd(TcpClient *client)
 
 int main()
 {
+	// linux	149.28.194.79
+	// windows	167.179.105.207
+	const char ip_linux[] = "149.28.194.79";
+	const char ip_windows[] = "167.179.105.207";
+	const char ip_local[] = "127.0.0.1";
+
 	TcpClient client1;
 	client1.init_socket();
-	client1.connect_server("127.0.0.1", 4568);
-
+	client1.connect_server(ip_windows, 4567);
+	 
 	//TcpClient client2;
 	//client2.init_socket();
 	//client2.connect_server("127.0.0.1", 4567);
@@ -63,7 +69,7 @@ int main()
 	while (client1.is_run())
 	{
 		client1.on_run();
-		//client2.on_run();
+		client1.send_data(&login);
 	}
 
 	client1.close_socket();

@@ -182,6 +182,7 @@ public:
 #endif
 	}
 
+	int count_ = 0;
 	// 处理网络消息
 	bool on_run()
 	{
@@ -217,8 +218,9 @@ public:
 
 		// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
-		timeval tm = { 1, 0 };
+		timeval tm = { 0, 0 };
 		int ret = select(max_socket + 1, &fd_read, &fd_write, &fd_except, &tm);
+		printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
 			cout << "select ends" << endl;
@@ -260,22 +262,27 @@ public:
 	{
 		return INVALID_SOCKET != sock_;
 	}
+	char recv_buf[409600] = {};
 	// 接受数据 处理粘包 拆分包
 	int recv_data(SOCKET _csock)
 	{
 		int len_head = sizeof(DataHeader);
 		// 缓冲区
-		char recv_buf[1024] = {};
+		
 		// 接受客户端的请求
-		int len = (int)recv(_csock, recv_buf, sizeof(DataHeader), 0);
-		DataHeader *head = (DataHeader*)recv_buf;
+		int len = (int)recv(_csock, recv_buf, 409600, 0);
+		printf("len=<%d>\n", len);
+		LoginResult ret;
+		send_data(_csock, &ret);
+
+		/*DataHeader *head = (DataHeader*)recv_buf;
 		if (len <= 0)
 		{
 			cout << "client:" << (int)_csock << "exited" << endl;
 			return -1;
 		}
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
-		on_net_msg(_csock, head);
+		on_net_msg(_csock, head);*/
 		return 0;
 	}
 
@@ -292,15 +299,14 @@ public:
 			printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)_csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			LoginResult ret;
-			send(_csock, (char*)&ret, sizeof(LoginResult), 0);
+			send_data(_csock, &ret);
 		}
 		break;
 		case CMD_SIGNOUT:
 		{
 			
 			SignOut *loginout = (SignOut*)head;
-			cout << "command CMD_SIGNOUT " << "socket:" << _csock << " data length :" << loginout->length_ << " userName:" << loginout->username_ << endl;
-			printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s>\n", (int)_csock, head->length_, loginout->username_);
+			printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)_csock, head->length_, loginout->username_);
 			// 判断用户密码正确的过程
 			SignOutResult ret = {};
 			send(_csock, (char*)&ret, sizeof(SignOutResult), 0);
