@@ -1,12 +1,9 @@
 ﻿#include "tcp_client.hpp"
 
 
-
-int process(SOCKET _csock);
-
 bool g_run = true;
 
-void cmd(TcpClient *client)
+void cmd()
 {
 	while (true)
 	{
@@ -14,22 +11,9 @@ void cmd(TcpClient *client)
 		scanf("%s", buffer);
 		if (0 == strcmp(buffer, "exit"))
 		{
-			client->close_socket();
+			g_run = false;
 			cout << "退出线程" << endl;
 			return;
-		}
-		else if (0 == strcmp(buffer, "login"))
-		{
-			Login login;
-			strcpy(login.username_, "Kevin");
-			strcpy(login.passwd_, "passwd");
-			client->send_data(&login);
-		}
-		else if (0 == strcmp(buffer, "signout"))
-		{
-			SignOut signout;
-			strcpy(signout.username_, "Kevin");
-			client->send_data(&signout);
 		}
 		else
 		{
@@ -47,17 +31,26 @@ int main()
 	const char ip_windows[] = "167.179.105.207";
 	const char ip_local[] = "127.0.0.1";
 
-	TcpClient client1;
-	client1.init_socket();
-	client1.connect_server(ip_windows, 4567);
+	const int size = FD_SETSIZE-1;
+	TcpClient *client[size];
+	int a = sizeof(client);
+	for (int n = 0; n < size; n++)
+	{
+		client[n] = new TcpClient;
+		client[n]->init_socket();
+		client[n]->connect_server(ip_local, 4567);
+	}
+	
 	 
 	//TcpClient client2;
 	//client2.init_socket();
 	//client2.connect_server("127.0.0.1", 4567);
 
 
-	thread cmd_thread1(cmd, &client1);
+	thread cmd_thread1(cmd);
 	cmd_thread1.detach();
+	
+	
 
 	//thread cmd_thread2(cmd, &client2);
 	//cmd_thread2.detach();
@@ -66,13 +59,18 @@ int main()
 	strcpy(login.username_, "Kevin");
 	strcpy(login.passwd_, "passwd");
 
-	while (client1.is_run())
+	while (g_run)
 	{
-		client1.on_run();
-		client1.send_data(&login);
+
+		for (int n = 0; n < size; n++)
+		{
+			client[n]->on_run();
+			client[n]->send_data(&login);
+		}
 	}
 
-	client1.close_socket();
+	for (int n = 0; n < size; n++)
+	client[n]->close_socket();
 	//client2.close_socket();
 	cout << "exited" << endl;
 

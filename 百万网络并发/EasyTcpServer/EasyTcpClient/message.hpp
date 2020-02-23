@@ -36,13 +36,14 @@ struct Login : public DataHeader
 	Login() { cmd_ = CMD_LOGIN; length_ = sizeof(Login); }
 	char username_[32];
 	char passwd_[32];
+	char data[932];
 };
 
 struct LoginResult :public DataHeader
 {
 	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
 	int result_;
-	char data[1024];
+	char data[992];
 };
 
 struct SignOut :public DataHeader
