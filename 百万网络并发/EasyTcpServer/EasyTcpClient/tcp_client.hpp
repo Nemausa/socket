@@ -23,15 +23,25 @@ using namespace std;
 #include <thread>
 #include "message.hpp"
 #include <mutex>
+
+//缓冲区最小单元的大小
+#define  RECV_BUFF_SIZE 10240
 class TcpClient
 {
 public:
 	SOCKET sock_;
-	mutex mutex_;
+
+	char sz_recv_buf_[RECV_BUFF_SIZE];		// 接收缓冲区
+	char sz_msg_buf_[RECV_BUFF_SIZE * 10];	// 消息缓冲区 
+	int last_pos_;
 public:
 	TcpClient()
 	{
 		sock_ = INVALID_SOCKET;
+		last_pos_ = 0;
+		memset(sz_recv_buf_, 0, RECV_BUFF_SIZE);
+		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 10);
+
 	}
 
 	virtual ~TcpClient()
@@ -124,7 +134,7 @@ public:
 
 		timeval tm = { 0, 0 };
 		int ret = select(sock_+1, &fd_read, 0, 0, &tm);
-		printf("select ret=<%d> count=<%d>\n", ret, count_++);
+		//printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
 			cout << "select taks ends 1" << endl;
@@ -151,24 +161,47 @@ public:
 		return INVALID_SOCKET != sock_;
 	}
 
-	// 缓冲区
-	char recv_buf[409600] = {};
+	
 	// 接受数据 处理粘包 拆包
 	int recv_data(SOCKET _csock)
 	{
 		int len_head = sizeof(DataHeader);
 		
-		// 接受客户端的请求
-		int len = recv(sock_, recv_buf, 409600, 0);
-		printf("len=<%d>\n", len);
-		/*DataHeader *head = (DataHeader*)recv_buf;
+		// 接受数据
+		int len = recv(sock_, sz_recv_buf_, RECV_BUFF_SIZE, 0);
 		if (len <= 0)
 		{
-			cout << "the task ends" << endl;
+			printf("socket=<%d> disconnect from server", sock_);
 			return -1;
 		}
-		recv(sock_, recv_buf + len_head, head->length_ - len_head, 0);
-		on_net_msg(head);*/
+
+		// 将收取的数据拷贝到消息缓冲区
+		memcpy(sz_msg_buf_+last_pos_, sz_recv_buf_, len);
+		// 消息缓冲区的数据尾部位置后移
+		last_pos_ += len;
+		// 判断消息缓冲区的数据长度大于消息头的长度
+		while (last_pos_ >= sizeof(DataHeader))
+		{
+			// 这时就可以知道当前消息体的长度
+			DataHeader *head = (DataHeader*)sz_msg_buf_;
+			// 判断消息缓冲区的数据长度大于消息长度
+			if (last_pos_ >= head->length_)
+			{
+				// 剩余未处理消息缓冲区的长度
+				int size = last_pos_ - head->length_;
+				// 处理网络消息
+				on_net_msg(head);
+				// 将剩余未处理消息缓冲前移
+				memcpy(sz_msg_buf_, sz_msg_buf_ + head->length_, size);
+				last_pos_ = size;	
+			}
+			else
+			{
+				// 剩余缓冲区数据不够一条完整的消息
+				break;
+			}
+
+		}
 
 		return 0;
 	}
@@ -182,24 +215,28 @@ public:
 		case CMD_LOGIN_RESULT:
 		{
 			LoginResult *login = (LoginResult*)head;
-			cout << "socket=" << sock_ << "command:CMD_LOGIN_RESULT" << "data length:" << login->length_ << endl;
+			//cout << "socket=" << sock_ << "command:CMD_LOGIN_RESULT" << "data length:" << login->length_ << endl;
 		}
 		break;
 		case CMD_SIGNOUT_RESULT:
 		{
 			SignOutResult *loginout = (SignOutResult*)head;
-			cout << "socket=" << sock_ << "command:CMD_SIGNOUT_RESULT" << "data length:" << loginout->length_ << endl;
+			//cout << "socket=" << sock_ << "command:CMD_SIGNOUT_RESULT" << "data length:" << loginout->length_ << endl;
 		}
 		break;
 		case  CMD_NEW_USER_JOIN:
 		{
 			NewUserJoin *user = (NewUserJoin*)head;
-			cout << "socket=" << sock_ << "command:CMD_NEW_USER_JOIN" << "data length:" << user->length_ << endl;
+			//cout << "socket=" << sock_ << "command:CMD_NEW_USER_JOIN" << "data length:" << user->length_ << endl;
+		}
+		break;
+		case  CMD_ERROR:
+		{
+			printf("socket=<%d> receive error, data length=<%d>\n", sock_, head->length_);
 		}
 		break;
 		default:
-			DataHeader head = { CMD_ERROR, 0 };
-			send(sock_, (char*)&head, sizeof(DataHeader), 0);
+			printf("socket=<%d> receive unknown message, data length=<%d>\n", sock_, head->length_);
 			break;
 		}
 	}

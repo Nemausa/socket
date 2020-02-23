@@ -220,7 +220,7 @@ public:
 		// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 		timeval tm = { 0, 0 };
 		int ret = select(max_socket + 1, &fd_read, &fd_write, &fd_except, &tm);
-		printf("select ret=<%d> count=<%d>\n", ret, count_++);
+		//printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
 			cout << "select ends" << endl;
@@ -262,7 +262,7 @@ public:
 	{
 		return INVALID_SOCKET != sock_;
 	}
-	char recv_buf[409600] = {};
+	char recv_buf[4096] = {};
 	// 接受数据 处理粘包 拆分包
 	int recv_data(SOCKET _csock)
 	{
@@ -270,17 +270,19 @@ public:
 		// 缓冲区
 		
 		// 接受客户端的请求
-		int len = (int)recv(_csock, recv_buf, 409600, 0);
-		printf("len=<%d>\n", len);
-		LoginResult ret;
-		send_data(_csock, &ret);
+		int len = (int)recv(_csock, recv_buf, 4096, 0);
+		//printf("len=<%d>\n", len);
 
-		/*DataHeader *head = (DataHeader*)recv_buf;
 		if (len <= 0)
 		{
 			cout << "client:" << (int)_csock << "exited" << endl;
 			return -1;
 		}
+
+		LoginResult ret;
+		send_data(_csock, &ret);
+		/*
+		DataHeader *head = (DataHeader*)recv_buf;
 		recv(_csock, recv_buf + len_head, head->length_ - len_head, 0);
 		on_net_msg(_csock, head);*/
 		return 0;
