@@ -97,8 +97,8 @@ public:
 		{
 			cout << "socket=" << sock_ <<"ip" << ip <<"port="<< port << "connect error" << endl;
 		}
-		else
-			cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;
+		/*else
+			cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;*/
 
 		return ret;
 	}

@@ -16,7 +16,7 @@
 */
 
 #ifdef _WIN32
-	#define FD_SETSIZE 4800
+	#define FD_SETSIZE 10096
 	#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
 	#define _WINSOCK_DEPRECATED_NO_WARNINGS
 	#include <windows.h>
@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <vector>
 #include "message.hpp"
+#include "cell_time_stamp.hpp"
 using namespace std;
 
 #ifndef RECV_BUFF_SIZE
@@ -95,9 +96,12 @@ private:
 	SOCKET sock_;
 	vector<ClientSocket*> clients_;
 	char recv_buf_[RECV_BUFF_SIZE];
+	CellTimeStamp timer_;
+	int recv_count_;
 public:
 	TcpServer()
 	{
+		recv_count_ = 0;
 		sock_ = INVALID_SOCKET;
 		memset(recv_buf_, 0, RECV_BUFF_SIZE);
 	}
@@ -205,7 +209,7 @@ public:
 		//send_to_all(&user);
 
 		clients_.push_back(new ClientSocket(csock));
-		printf("socket=<%d>, client with socket=<%d> and ip=<%s> joined, clients size=<%d>\n", sock_, csock, inet_ntoa(client_addr.sin_addr), clients_.size());
+		//printf("socket=<%d>, client with socket=<%d> and ip=<%s> joined, clients size=<%d>\n", sock_, csock, inet_ntoa(client_addr.sin_addr), clients_.size());
 		return csock;
 	}
 
@@ -283,6 +287,7 @@ public:
 		{
 			FD_CLR(sock_, &fd_read);
 			accpet_client();
+			return true;
 		}
 
 		//for (size_t n = 0; n < fd_read.fd_count; n++)
@@ -364,6 +369,16 @@ public:
 	// 响应网络消息
 	virtual void on_net_msg(SOCKET csock, DataHeader *head)
 	{
+
+		recv_count_++;
+		auto t = timer_.get_elapsed_second();
+		if ( t>= 1.0)
+		{
+			recv_count_ /= t;
+			printf("time<%lf>,socket<%d>, recv_count_<%d>, clients<%d>\n", t, sock_, recv_count_, clients_.size());
+			timer_.update();
+			recv_count_ = 0;
+		}
 		// 处理请求
 		switch (head->cmd_)
 		{

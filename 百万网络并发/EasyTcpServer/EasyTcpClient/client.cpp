@@ -32,7 +32,7 @@ int main()
 	const char ip_local[] = "127.0.0.1";
 	//const char ip_local[] = "192.168.1.101";
 
-	const int size = 4000;
+	const int size = 2000;
 	TcpClient *client[size];
 
 	for (int n = 0; n < size; n++)
@@ -48,6 +48,7 @@ int main()
 		
 		client[n]->init_socket();
 		client[n]->connect_server(ip_local, 4567);
+		printf("connect<%d>\n", n + 1);
 	}
 	
 	 
@@ -56,8 +57,8 @@ int main()
 	//client2.connect_server("127.0.0.1", 4567);
 
 
-	thread cmd_thread1(cmd);
-	cmd_thread1.detach();
+	//thread cmd_thread1(cmd);
+	//cmd_thread1.detach();
 	
 	
 
