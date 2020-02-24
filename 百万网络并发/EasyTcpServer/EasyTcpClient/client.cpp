@@ -32,17 +32,20 @@ int main()
 	const char ip_local[] = "127.0.0.1";
 	//const char ip_local[] = "192.168.1.101";
 
-	const int size = FD_SETSIZE - 1;
-	//const int size = 100;
+	const int size = 4000;
 	TcpClient *client[size];
-	int a = sizeof(client);
 
 	for (int n = 0; n < size; n++)
 	{
+		if (!g_run)
+		{
+			return 0;
+		}
 		client[n] = new TcpClient();
 	}
 	for (int n = 0; n < size; n++)
 	{
+		
 		client[n]->init_socket();
 		client[n]->connect_server(ip_local, 4567);
 	}

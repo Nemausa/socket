@@ -16,18 +16,19 @@
 */
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <windows.h>
-#include <WinSock2.h>
-#pragma comment(lib,"ws2_32.lib")
+	#define FD_SETSIZE 4800
+	#define WIN32_LEAN_AND_MEAN  // 避免早期定义的宏冲突
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#include <windows.h>
+	#include <WinSock2.h>
+	#pragma comment(lib,"ws2_32.lib")
 #else//#elif __APPLE__
-#include <unistd.h>  // unix std
-#include <arpa/inet.h>
-#include <string.h>
-#define SOCKET int
-#define INVALID_SOCKET  (SOCKET)(~0)
-#define SOCKET_ERROR            (-1)
+	#include <unistd.h>  // unix std
+	#include <arpa/inet.h>
+	#include <string.h>
+	#define SOCKET int
+	#define INVALID_SOCKET  (SOCKET)(~0)
+	#define SOCKET_ERROR            (-1)
 
 //#else
 //#   error "Unknown compiler"
@@ -200,11 +201,11 @@ public:
 			return INVALID_SOCKET;
 		}
 		
-		NewUserJoin user = {};
-		send_to_all(&user);
+		//NewUserJoin user = {};
+		//send_to_all(&user);
 
 		clients_.push_back(new ClientSocket(csock));
-		printf("socket=<%d>, client with socket=<%d> and ip=<%s> joined\n", sock_, csock, inet_ntoa(client_addr.sin_addr));
+		printf("socket=<%d>, client with socket=<%d> and ip=<%s> joined, clients size=<%d>\n", sock_, csock, inet_ntoa(client_addr.sin_addr), clients_.size());
 		return csock;
 	}
 
@@ -389,7 +390,7 @@ public:
 		default:
 			DataHeader ret = {};
 			//send_data(csock, &ret);
-			//printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)csock, ret.length_);
+			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)csock, ret.length_);
 			break;
 		}
 
