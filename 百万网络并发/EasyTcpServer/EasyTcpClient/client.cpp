@@ -30,13 +30,19 @@ int main()
 	const char ip_linux[] = "149.28.194.79";
 	const char ip_windows[] = "167.179.105.207";
 	const char ip_local[] = "127.0.0.1";
+	//const char ip_local[] = "192.168.1.101";
 
-	const int size = FD_SETSIZE-1;
+	const int size = FD_SETSIZE - 1;
+	//const int size = 100;
 	TcpClient *client[size];
 	int a = sizeof(client);
+
 	for (int n = 0; n < size; n++)
 	{
-		client[n] = new TcpClient;
+		client[n] = new TcpClient();
+	}
+	for (int n = 0; n < size; n++)
+	{
 		client[n]->init_socket();
 		client[n]->connect_server(ip_local, 4567);
 	}
@@ -64,7 +70,7 @@ int main()
 
 		for (int n = 0; n < size; n++)
 		{
-			client[n]->on_run();
+			//client[n]->on_run();
 			client[n]->send_data(&login);
 		}
 	}
