@@ -73,8 +73,8 @@ public:
 		{
 			cout << "socket error" << endl;
 		}
-		else
-			cout << "socket success" << endl;
+		/*else
+			cout << "socket success" << endl;*/
 	}
 
 	// 连接服务器

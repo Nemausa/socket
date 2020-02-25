@@ -23,8 +23,15 @@ void cmd()
 	
 }
 
-int main()
+const int t_count = 6;    // 线程数量
+const int c_count = 4000; // 客户端数量
+TcpClient *client[c_count];
+
+void send_thread(int id)
 {
+	int c = c_count / t_count;
+	int begin = (id - 1)*c;
+	int end = id*c;
 	// linux	149.28.194.79
 	// windows	167.179.105.207
 	const char ip_linux[] = "149.28.194.79";
@@ -32,39 +39,20 @@ int main()
 	const char ip_local[] = "127.0.0.1";
 	//const char ip_local[] = "192.168.1.101";
 
-	const int size = 2000;
-	TcpClient *client[size];
-
-	for (int n = 0; n < size; n++)
+	for (int n = begin; n < end; n++)
 	{
-		if (!g_run)
-		{
-			return 0;
-		}
 		client[n] = new TcpClient();
 	}
-	for (int n = 0; n < size; n++)
+	for (int n = begin; n < end; n++)
 	{
-		
+		if (!g_run)
+			return;
 		client[n]->init_socket();
 		client[n]->connect_server(ip_local, 4567);
 		printf("connect<%d>\n", n + 1);
 	}
-	
-	 
-	//TcpClient client2;
-	//client2.init_socket();
-	//client2.connect_server("127.0.0.1", 4567);
 
 
-	//thread cmd_thread1(cmd);
-	//cmd_thread1.detach();
-	
-	
-
-	//thread cmd_thread2(cmd, &client2);
-	//cmd_thread2.detach();
-	
 	Login login;
 	strcpy(login.username_, "Kevin");
 	strcpy(login.passwd_, "passwd");
@@ -72,19 +60,39 @@ int main()
 	while (g_run)
 	{
 
-		for (int n = 0; n < size; n++)
+		for (int n = begin; n < end; n++)
 		{
 			//client[n]->on_run();
 			client[n]->send_data(&login);
 		}
 	}
 
-	for (int n = 0; n < size; n++)
-	client[n]->close_socket();
-	//client2.close_socket();
+	for (int n = begin; n < end; n++)
+		client[n]->close_socket();
+}
+
+int main()
+{
+	
+
+	// UI线程
+	thread cmd_thread(cmd);
+	cmd_thread.detach();
+
+	
+	// 启动发送线程
+	for (int n = 0; n < t_count; n++)
+	{
+		thread t1(send_thread, n+1);
+		t1.detach();
+	}
+
+	while (g_run)
+		Sleep(100);
+
 	cout << "exited" << endl;
 
-	getchar();
+	
 	return 0;
 }
 
