@@ -23,8 +23,8 @@ void cmd()
 	
 }
 
-const int t_count = 6;    // 线程数量
-const int c_count = 4000; // 客户端数量
+const int t_count = 4;    // 线程数量
+const int c_count = 10000; // 客户端数量
 TcpClient *client[c_count];
 
 void send_thread(int id)
@@ -36,8 +36,8 @@ void send_thread(int id)
 	// windows	167.179.105.207
 	const char ip_linux[] = "149.28.194.79";
 	const char ip_windows[] = "167.179.105.207";
-	const char ip_local[] = "127.0.0.1";
-	//const char ip_local[] = "192.168.1.101";
+	//const char ip_local[] = "127.0.0.1";
+	const char ip_local[] = "192.168.1.101";
 
 	for (int n = begin; n < end; n++)
 	{
@@ -45,24 +45,23 @@ void send_thread(int id)
 	}
 	for (int n = begin; n < end; n++)
 	{
-		if (!g_run)
-			return;
 		client[n]->init_socket();
 		client[n]->connect_server(ip_local, 4567);
 		printf("connect<%d>\n", n + 1);
 	}
 
+	std::chrono::milliseconds t(5000);
+	std::this_thread::sleep_for(t);
 
 	Login login;
 	strcpy(login.username_, "Kevin");
 	strcpy(login.passwd_, "passwd");
 
+
 	while (g_run)
 	{
-
 		for (int n = begin; n < end; n++)
 		{
-			//client[n]->on_run();
 			client[n]->send_data(&login);
 		}
 	}
@@ -86,7 +85,7 @@ int main()
 		thread t1(send_thread, n+1);
 		t1.detach();
 	}
-
+	
 	while (g_run)
 		Sleep(100);
 
