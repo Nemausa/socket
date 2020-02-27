@@ -30,17 +30,18 @@ class TcpClient
 {
 public:
 	SOCKET sock_;
-
+	bool is_connect_;
 	char sz_recv_buf_[RECV_BUFF_SIZE];		// 接收缓冲区
-	char sz_msg_buf_[RECV_BUFF_SIZE * 10];	// 消息缓冲区 
+	char sz_msg_buf_[RECV_BUFF_SIZE * 5];	// 消息缓冲区 
 	int last_pos_;
 public:
 	TcpClient()
 	{
 		sock_ = INVALID_SOCKET;
 		last_pos_ = 0;
+		is_connect_ = false;
 		memset(sz_recv_buf_, 0, RECV_BUFF_SIZE);
-		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 10);
+		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 5);
 
 	}
 
@@ -97,8 +98,11 @@ public:
 		{
 			cout << "socket=" << sock_ <<"ip" << ip <<"port="<< port << "connect error" << endl;
 		}
-		/*else
-			cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;*/
+		else
+		{
+			is_connect_ = true;
+		}
+			//cout << "socket=" << sock_ <<"ip" << ip << "port=" << port << "connect success" << endl;*/
 
 		return ret;
 	}
@@ -118,10 +122,10 @@ public:
 		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
+		is_connect_ = false;
 	}
 
 
-	int count_ = 0;
 	// 处理网络消息
 	bool on_run()
 	{
@@ -134,7 +138,6 @@ public:
 
 		timeval tm = { 0, 0 };
 		int ret = select((int)sock_+1, &fd_read, 0, 0, &tm);
-		//printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
 			cout << "select taks ends 1" << endl;
@@ -244,11 +247,16 @@ public:
 	// 发送数据
 	int send_data(DataHeader *head, int length)
 	{
+		int ret = SOCKET_ERROR;
 		if (is_run() && head)
 		{
-			return send(sock_, (const char*)head, length, 0);
+			ret = send(sock_, (const char*)head, length, 0);
+			if (SOCKET_ERROR == ret)
+			{
+				close_socket();
+			}
 		}
-		return SOCKET_ERROR;
+		return ret;
 			
 	}
 

@@ -49,9 +49,10 @@ using namespace std;
 #define RECV_BUFF_SIZE 10240
 #endif
 
-#define _CellServer_THREAD_COUNT 6
 
 
+
+// 客户端数据类型
 class ClientSocket
 {
 public:
@@ -59,7 +60,7 @@ public:
 	{
 		sockfd_ = sockfd;
 		last_pos_ = 0;
-		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 10);
+		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 5);
 	}
 	virtual ~ClientSocket()
 	{
@@ -86,21 +87,38 @@ public:
 		last_pos_ = pos;
 	}
 
+	// 发送数据给指定的客户端
+	int send_data(DataHeader *head)
+	{
+		if ( head)
+		{
+			return send(sockfd_, (const char*)head, head->length_, 0);
+		}
+		return SOCKET_ERROR;
+	}
+
 	
 private:
 	SOCKET sockfd_; // socket fd_set file desc set
 	// 第二缓冲区 消息缓冲区
-	char sz_msg_buf_[RECV_BUFF_SIZE * 10];
+	char sz_msg_buf_[RECV_BUFF_SIZE * 5];
 	// 消息缓冲区的数据尾部位置
 	int last_pos_;
 };
 
+// 网络事件
 class INetEvent
 {
 public:
-	// 客户端离开
+	// 客户端加入事件
+	virtual void on_join(ClientSocket* client) = 0;
+	// 客户端离开事件
 	virtual void on_leave(ClientSocket* client) = 0; // 纯虚函数  继承类必须实现函数功能
-	virtual void on_net_msg(SOCKET csock, DataHeader *head) = 0;
+	// 客户端消息事件
+	virtual void on_net_msg(ClientSocket* client, DataHeader *head) = 0;
+
+
+	
 private:
 
 };
@@ -113,12 +131,12 @@ public:
 	CellServer(SOCKET sock = INVALID_SOCKET)
 	{
 		sock_ = sock;
-		recv_count_ = 0;
 		thread_ = nullptr;
 		net_event_ = nullptr;
 	}
 	virtual ~CellServer()
 	{
+		delete thread_;
 		close_socket();
 		sock_ = INVALID_SOCKET;
 	}
@@ -242,7 +260,7 @@ public:
 
 		if (len <= 0)
 		{
-			cout << "client:" << (int)client->sockfd() << "exited" << endl;
+			//cout << "client:" << (int)client->sockfd() << "exited" << endl;
 			return -1;
 		}
 		// 将收取的数据拷贝到消息缓冲区
@@ -258,7 +276,7 @@ public:
 				// 消息缓冲区剩余未处理的数据
 				int size = client->get_last_pos() - head->length_;
 				// 处理网络消息
-				on_net_msg(client->sockfd(), head);
+				on_net_msg(client, head);
 				// 将消息缓冲区剩余未处理的数据迁移
 				memcpy(client->msg_buf(), client->msg_buf() + head->length_, size);
 				// 消息缓冲区的尾部位置前移
@@ -275,40 +293,9 @@ public:
 		return 0;
 	}
 
-	virtual void on_net_msg(SOCKET csock, DataHeader *head)
+	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
 	{
-
-		recv_count_++;
-		net_event_->on_net_msg(csock, head);
-		switch (head->cmd_)
-		{
-		case CMD_LOGIN:
-		{
-
-			Login *login = (Login*)head;
-			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
-			// 判断用户密码正确的过程
-			//LoginResult ret;
-			//send_data(csock, &ret);
-		}
-		break;
-		case CMD_SIGNOUT:
-		{
-
-			SignOut *loginout = (SignOut*)head;
-			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
-			// 判断用户密码正确的过程
-			//SignOutResult ret = {};
-			//send_data(csock, &ret);
-		}
-		break;
-		default:
-			DataHeader ret = {};
-			//send_data(csock, &ret);
-			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)csock, ret.length_);
-			break;
-		}
-
+		net_event_->on_net_msg(client, head);
 	}
 
 	void start()
@@ -329,15 +316,16 @@ public:
 	}
 private:
 	SOCKET sock_;
+	char recv_buf_[RECV_BUFF_SIZE];
+	// 缓冲队列的锁
 	mutex mutex_;
 	thread* thread_;
-	vector<ClientSocket*> clients_;		  // 正式客户队列
-	vector<ClientSocket*> clients_quene_;  // 缓冲客户对列
-	char recv_buf_[RECV_BUFF_SIZE];
+	// 正式客户队列
+	vector<ClientSocket*> clients_;		
+	// 缓冲客户对列
+	vector<ClientSocket*> clients_quene_;
+	// 网络事件
 	INetEvent* net_event_;
-public:
-	atomic_int recv_count_;
-
 };
 
 
@@ -348,6 +336,8 @@ public:
 	TcpServer()
 	{
 		sock_ = INVALID_SOCKET;
+		msg_count_ = 0;
+		clients_count_ = 0;
 		memset(recv_buf_, 0, RECV_BUFF_SIZE);
 	}
 	virtual ~TcpServer()
@@ -450,15 +440,17 @@ public:
 			printf("socket=<%d> error, invalid socket\n", (int)sock_);
 			return INVALID_SOCKET;
 		}
-		add_client_to_server(new ClientSocket(csock));
-		//printf("socket=<%d>, client with socket=<%d> and ip=<%s> joined, clients size=<%d>\n", sock_, csock, inet_ntoa(client_addr.sin_addr), clients_.size());
+		else
+		{
+			// 将客户端分配给最小的处理线程
+			add_client_to_server(new ClientSocket(csock));
+		}
+		// 获取ip地址：inet_ntoa(client_addr.sin_addr)
 		return csock;
 	}
 
 	void add_client_to_server(ClientSocket* client)
 	{
-		
-		clients_.push_back(client);
 		auto min_server = cell_servers_[0];
 		// 查找客户端最少的cellserver处理线程
 		for (auto cell : cell_servers_)
@@ -467,16 +459,19 @@ public:
 				min_server = cell;
 		}
 		min_server->addClient(client);
+		on_join(client);
 	}
 
-	void start()
+	void start(int servers)
 	{
 
-		for (int n = 0; n < _CellServer_THREAD_COUNT; n++)
+		for (int n = 0; n < servers; n++)
 		{
 			auto ser = new CellServer(sock_);
 			cell_servers_.push_back(ser);
+			// 注册网络事件接受对象
 			ser->set_event(this);
+			// 启动服务线程
 			ser->start();
 		}
 	}
@@ -488,23 +483,12 @@ public:
 			return;
 
 #ifdef _WIN32
-		for (int n = (int)clients_.size() - 1; n >= 0; n--)
-		{
-			closesocket(clients_[n]->sockfd());
-			delete clients_[n];
-		}
 		// 关闭套接字
 		closesocket(sock_);
-		WSACleanup();
 #else
-		for (int n = (int)clients_.size() - 1; n >= 0; n--)
-		{
-			close(clients_[n]->sockfd());
-			delete clients_[n];
-		}
 		close(sock_);
 #endif
-		clients_.clear();
+
 	}
 
 	// 是否在工作中
@@ -539,67 +523,107 @@ public:
 		return true;
 	}
 
+	// 网络消息计数
 	void time_for_msg()
 	{
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			long long recv_count = 0;
-			for (auto ser : cell_servers_)
-			{
-				recv_count += ser->recv_count_;
-				ser->recv_count_ = 0;
-			}
-			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>, recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, (int)clients_.size(), (int)(recv_count));
+			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>, recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, int(msg_count_/t));
 			timer_.update();
+			msg_count_ = 0;
 		}
 	}
 
-	// 发送数据给指定的客户端
-	int send_data(SOCKET csock, DataHeader *head)
+
+
+	// 多线程出发 不安全
+	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
 	{
-		if (is_run() && head)
-		{
-			return send(csock, (const char*)head, head->length_, 0);
-		}
-		return SOCKET_ERROR;
+		msg_count_++;
 	}
 
-	// 发送数据给所有的客户端
-	void send_to_all(DataHeader *head)
+	// 多线程触发  不安全
+	virtual void on_leave(ClientSocket* client)
 	{
-		for (int n = (int)clients_.size() - 1; n >= 0; n--)
-		{
-			send_data(clients_[n]->sockfd(), head);
-		}
-		
+		clients_count_--;
 	}
 
-	void on_leave(ClientSocket* client)
+	// 只会被一个线程触发  安全
+	virtual void on_join(ClientSocket* client)
 	{
-		for (int n = (int)clients_.size(); n >= 0; n--)
-		{
-			if (clients_[n] == client)
-			{
-				auto iter = clients_.begin() + n;
-				if (iter != clients_.end())
-					clients_.erase(iter);
-			}
-		}
-	}
-
-	void on_net_msg(SOCKET csock, DataHeader *head)
-	{
-		//time_for_msg();
+		clients_count_++;
 	}
 
 
 private:
 	SOCKET sock_;
-	vector<ClientSocket*> clients_;
+	// 消息处理对象，内部会创建线程
 	vector<CellServer*> cell_servers_;
 	char recv_buf_[RECV_BUFF_SIZE];
 	CellTimeStamp timer_;
+protected:
+	// 受到消息计数
+	atomic_int msg_count_;
+	// 客户端数量
+	atomic_int clients_count_;
+
+};
+
+
+class MyServer :public TcpServer
+{
+public:
+	// 多线程出发 不安全
+	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
+	{
+		msg_count_++;
+		switch (head->cmd_)
+		{
+		case CMD_LOGIN:
+		{
+
+			Login *login = (Login*)head;
+			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
+			// 判断用户密码正确的过程
+			LoginResult ret;
+			client->send_data(&ret);
+		}
+		break;
+		case CMD_SIGNOUT:
+		{
+
+			SignOut *loginout = (SignOut*)head;
+			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
+			// 判断用户密码正确的过程
+			//SignOutResult ret = {};
+			//send_data(csock, &ret);
+		}
+		break;
+		default:
+			DataHeader ret = {};
+			//send_data(csock, &ret);
+			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
+			break;
+		}
+	}
+
+	// 多线程触发  不安全
+	virtual void on_leave(ClientSocket* client)
+	{
+		clients_count_--;
+		printf("client<%d> leave\n", client->sockfd());
+
+	}
+
+	// 只会被一个线程触发  安全
+	virtual void on_join(ClientSocket* client)
+	{
+		clients_count_++;
+		printf("client<%d> join\n", client->sockfd());
+	}
+
+private:
 
 };
 

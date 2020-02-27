@@ -23,8 +23,8 @@ void cmd()
 	
 }
 
-const int t_count = 4;    // 线程数量
-const int c_count = 1000; // 客户端数量
+const int t_count = 5;    // 线程数量
+const int c_count = 10; // 客户端数量
 TcpClient *client[c_count];
 
 void send_thread(int id)
@@ -36,8 +36,8 @@ void send_thread(int id)
 	// windows	167.179.105.207
 	const char ip_linux[] = "149.28.194.79";
 	const char ip_windows[] = "167.179.105.207";
-	const char ip_local[] = "127.0.0.1";
-	//const char ip_local[] = "192.168.1.101";
+	//const char ip_local[] = "127.0.0.1";
+	const char ip_local[] = "192.168.1.101";
 
 	for (int n = begin; n < end; n++)
 	{
@@ -46,11 +46,12 @@ void send_thread(int id)
 	for (int n = begin; n < end; n++)
 	{
 		client[n]->init_socket();
-		client[n]->connect_server(ip_linux, 4567);
-		printf("connect<%d>\n", n + 1);
+		client[n]->connect_server(ip_local, 4567);
+		
 	}
 
-	std::chrono::milliseconds t(5000);
+	printf("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
+	std::chrono::milliseconds t(3000);
 	std::this_thread::sleep_for(t);
 
 	Login login[10];
@@ -60,18 +61,23 @@ void send_thread(int id)
 		strcpy(login[n].username_, "Morris");
 	}
 
-	int len = sizeof(login);
+	const int len = sizeof(login);
 
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
 		{
 			client[n]->send_data(login, len);
+			client[n]->on_run();
 		}
 	}
 
 	for (int n = begin; n < end; n++)
+	{
 		client[n]->close_socket();
+		delete client[n];
+	}
+	printf("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
 }
 
 int main()

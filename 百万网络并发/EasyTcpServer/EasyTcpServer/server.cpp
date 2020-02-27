@@ -25,13 +25,17 @@ void cmd()
 
 }
 
+
+
+
+
 int main()
 {
-	TcpServer server1;
+	MyServer server1;
 	server1.init_socket();
 	server1.bind_port(nullptr, 4567);
 	server1.listen_port(5);
-	server1.start();
+	server1.start(6);
 
 	thread cmd_thread1(cmd);
 	cmd_thread1.detach();
