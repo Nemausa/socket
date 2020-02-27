@@ -133,7 +133,7 @@ public:
 		FD_SET(sock_, &fd_read);
 
 		timeval tm = { 0, 0 };
-		int ret = select(sock_+1, &fd_read, 0, 0, &tm);
+		int ret = select((int)sock_+1, &fd_read, 0, 0, &tm);
 		//printf("select ret=<%d> count=<%d>\n", ret, count_++);
 		if (ret < 0)
 		{
@@ -171,7 +171,7 @@ public:
 		int len = recv(sock_, sz_recv_buf_, RECV_BUFF_SIZE, 0);
 		if (len <= 0)
 		{
-			printf("socket=<%d> disconnect from server", sock_);
+			printf("socket=<%d> disconnect from server", (int)sock_);
 			return -1;
 		}
 
@@ -232,21 +232,21 @@ public:
 		break;
 		case  CMD_ERROR:
 		{
-			printf("socket=<%d> receive error, data length=<%d>\n", sock_, head->length_);
+			printf("socket=<%d> receive error, data length=<%d>\n", (int)sock_, head->length_);
 		}
 		break;
 		default:
-			printf("socket=<%d> receive unknown message, data length=<%d>\n", sock_, head->length_);
+			printf("socket=<%d> receive unknown message, data length=<%d>\n", (int)sock_, head->length_);
 			break;
 		}
 	}
 
 	// 发送数据
-	int send_data(DataHeader *head)
+	int send_data(DataHeader *head, int length)
 	{
 		if (is_run() && head)
 		{
-			return send(sock_, (const char*)head, head->length_, 0);
+			return send(sock_, (const char*)head, length, 0);
 		}
 		return SOCKET_ERROR;
 			

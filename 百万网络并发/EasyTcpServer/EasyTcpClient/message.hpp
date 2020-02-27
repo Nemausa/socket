@@ -10,7 +10,7 @@
 * (note: this needs exactly one @defgroup somewhere)
 *
 * @date	2020-02-21
-* @author Kevin
+* @author Morris
 * contact: tappanmorris@outlook.com
 *
 */

@@ -10,7 +10,7 @@
 * (note: this needs exactly one @defgroup somewhere)
 *
 * @date	2020-02-22
-* @author Kevin
+* @author Morris
 * contact: tappanmorris@outlook.com
 *
 */
@@ -40,6 +40,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <functional>
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 using namespace std;
@@ -99,7 +100,7 @@ class INetEvent
 public:
 	// 客户端离开
 	virtual void on_leave(ClientSocket* client) = 0; // 纯虚函数  继承类必须实现函数功能
-
+	virtual void on_net_msg(SOCKET csock, DataHeader *head) = 0;
 private:
 
 };
@@ -191,7 +192,7 @@ public:
 
 			fd_set fd_read;
 			FD_ZERO(&fd_read);
-			FD_SET(sock_, &fd_read);
+			//FD_SET(sock_, &fd_read);
 			SOCKET max_socket = clients_[0]->sockfd();
 			for (auto socket : clients_)
 			{
@@ -202,7 +203,7 @@ public:
 
 			// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 			// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
-			int ret = select(max_socket + 1, &fd_read, nullptr, nullptr, nullptr);
+			int ret = select((int)max_socket + 1, &fd_read, nullptr, nullptr, nullptr);
 			if (ret < 0)
 			{
 				cout << "select ends" << endl;
@@ -228,7 +229,8 @@ public:
 			}
 
 		}
-		
+	
+		return true;
 	}
 
 	// 接受数据 处理粘包 拆分包
@@ -277,6 +279,7 @@ public:
 	{
 
 		recv_count_++;
+		net_event_->on_net_msg(csock, head);
 		switch (head->cmd_)
 		{
 		case CMD_LOGIN:
@@ -310,7 +313,8 @@ public:
 
 	void start()
 	{
-		thread_ = new thread(std::mem_fn(&CellServer::on_run), this);
+		//thread_ = new thread(std::mem_fn(&CellServer::on_run), this);
+		thread_ = new thread(&CellServer::on_run, this);
 	}
 
 	void addClient(ClientSocket* pClient)
@@ -417,11 +421,11 @@ public:
 		int result =listen(sock_, count);
 		if (SOCKET_ERROR == result)
 		{
-			printf("socket=<%d> error, listen error\n", sock_);
+			printf("socket=<%d> error, listen error\n", (int)sock_);
 		}
 		else
 		{
-			printf("socket=<%d> listen success\n", sock_);
+			printf("socket=<%d> listen success\n", (int)sock_);
 		}
 
 		return result;
@@ -443,7 +447,7 @@ public:
 #endif
 		if (INVALID_SOCKET == csock)
 		{
-			printf("socket=<%d> error, invalid socket\n", sock_);
+			printf("socket=<%d> error, invalid socket\n", (int)sock_);
 			return INVALID_SOCKET;
 		}
 		add_client_to_server(new ClientSocket(csock));
@@ -517,8 +521,8 @@ public:
 		fd_set fd_read;
 		FD_ZERO(&fd_read);
 		FD_SET(sock_, &fd_read);
-		timeval t = { 1,0 };
-		int ret = select(sock_ + 1, &fd_read, 0, 0, &t);
+		timeval t = { 0,10 };
+		int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
 		if (ret < 0)
 		{
 			printf("select task ends");
@@ -546,7 +550,7 @@ public:
 				recv_count += ser->recv_count_;
 				ser->recv_count_ = 0;
 			}
-			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>, recv_count<%d>\n", cell_servers_.size(), t, sock_, (int)clients_.size(), (int)(recv_count));
+			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>, recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, (int)clients_.size(), (int)(recv_count));
 			timer_.update();
 		}
 	}
@@ -582,6 +586,11 @@ public:
 					clients_.erase(iter);
 			}
 		}
+	}
+
+	void on_net_msg(SOCKET csock, DataHeader *head)
+	{
+		//time_for_msg();
 	}
 
 
