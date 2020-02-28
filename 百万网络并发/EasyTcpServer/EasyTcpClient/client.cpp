@@ -24,7 +24,7 @@ void cmd()
 }
 
 const int t_count = 5;    // 线程数量
-const int c_count = 10; // 客户端数量
+const int c_count = 10000; // 客户端数量
 TcpClient *client[c_count];
 
 void send_thread(int id)
@@ -36,8 +36,8 @@ void send_thread(int id)
 	// windows	167.179.105.207
 	const char ip_linux[] = "149.28.194.79";
 	const char ip_windows[] = "167.179.105.207";
-	//const char ip_local[] = "127.0.0.1";
-	const char ip_local[] = "192.168.1.101";
+	const char ip_local[] = "127.0.0.1";
+	//const char ip_local[] = "192.168.1.101";
 
 	for (int n = begin; n < end; n++)
 	{
@@ -68,7 +68,7 @@ void send_thread(int id)
 		for (int n = begin; n < end; n++)
 		{
 			client[n]->send_data(login, len);
-			client[n]->on_run();
+			//client[n]->on_run();
 		}
 	}
 

@@ -41,6 +41,7 @@
 #include <mutex>
 #include <atomic>
 #include <functional>
+#include <map>
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 using namespace std;
@@ -153,19 +154,20 @@ public:
 			return;
 
 #ifdef _WIN32
-		for (int n = (int)clients_.size() - 1; n >= 0; n--)
+		
+		for(auto iter:clients_)
 		{
-			closesocket(clients_[n]->sockfd());
-			delete clients_[n];
+			closesocket(iter.second->sockfd());
+			delete iter.second;
 		}
 		// 关闭套接字
 		closesocket(sock_);
 		WSACleanup();
 #else
-		for (int n = (int)clients_.size() - 1; n >= 0; n--)
+		for (auto iter : clients_)
 		{
-			close(clients_[n]->sockfd());
-			delete clients_[n];
+			closesocket(iter.second->sockfd());
+			delete iter.second;
 		}
 		close(sock_);
 #endif
@@ -179,9 +181,15 @@ public:
 		return INVALID_SOCKET != sock_;
 	}
 
+	// 备份客户socket fd_set
+	fd_set fd_read_back_;
+
+	bool clients_change_;
+	SOCKET max_socket_;
 	// 处理网络消息
 	bool on_run()
 	{
+		clients_change_ = true;
 		while (is_run())
 		{
 			// 伯克利套接字 BSD socket
@@ -196,8 +204,9 @@ public:
 			{
 				lock_guard<mutex> lg(mutex_);
 				for (auto client : clients_quene_)
-					clients_.push_back(client);
+					clients_[client->sockfd()] = client;
 				clients_quene_.clear();
+				clients_change_ = true;
 			}
 
 			if (clients_.empty())
@@ -210,42 +219,89 @@ public:
 
 			fd_set fd_read;
 			FD_ZERO(&fd_read);
-			//FD_SET(sock_, &fd_read);
-			SOCKET max_socket = clients_[0]->sockfd();
-			for (auto socket : clients_)
+			max_socket_ = clients_.begin()->second->sockfd();
+			if (clients_change_)
 			{
-				FD_SET(socket->sockfd(), &fd_read);
-				if (socket->sockfd() > max_socket)
-					max_socket = socket->sockfd();
+				for (auto iter : clients_)
+				{
+					FD_SET(iter.second->sockfd(), &fd_read);
+					if (iter.second->sockfd() > max_socket_)
+						max_socket_ = iter.second->sockfd();
+				}
+
+				memcpy(&fd_read_back_, &fd_read, sizeof(fd_set));
+				clients_change_ = false;
 			}
+			else
+			{
+				memcpy(&fd_read, &fd_read_back_, sizeof(fd_set));
+			}
+			
+			
 
 			// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 			// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
-			int ret = select((int)max_socket + 1, &fd_read, nullptr, nullptr, nullptr);
+			//timeval t = { 0, 0 };
+			int ret = select((int)max_socket_ + 1, &fd_read, nullptr, nullptr, nullptr);
 			if (ret < 0)
 			{
 				cout << "select ends" << endl;
 				close_socket();
 				return false;
 			}
-			for (int n = (int)clients_.size() - 1; n >= 0; n--)
+			else if (ret == 0)
 			{
-				if (FD_ISSET(clients_[n]->sockfd(), &fd_read))
+				continue;
+			}
+
+			
+#ifdef _WIN32
+			for (int n = 0; n<fd_read.fd_count; n++)
+			{
+				auto iter = clients_.find(fd_read.fd_array[n]);
+				if (iter != clients_.end())
 				{
-					if (-1 == recv_data(clients_[n]))
+					if (-1 == recv_data(iter->second))
 					{
-						auto iter = clients_.begin() + n;//std::vector<SOCKET>::iterator
-						if (iter != clients_.end())
-						{
-							if(net_event_)
-								net_event_->on_leave(clients_[n]);
-							delete clients_[n];
-							clients_.erase(iter);
-						}
+						clients_change_ = true;
+						if (net_event_)
+							net_event_->on_leave(iter->second);
+
+						clients_.erase(iter->first);
+						delete iter->second;
+					}
+				}
+				else
+				{
+					printf("error,if (iter != clients_.end())");
+				}
+				
+
+			}
+#else
+			for (auto iter : clients_)
+			{
+				if (FD_ISSET(iter.second->sockfd(), &fd_read))
+				{
+					if (-1 == recv_data(iter.second))
+					{
+						clients_change_ = true;
+						if (net_event_)
+							net_event_->on_leave(iter.second);
+						temp.push_back(iter.second);
+
 					}
 				}
 			}
 
+			vector<ClientSocket*> temp;
+			for (auto client : temp)
+			{
+				clients_.erase(client->sockfd());
+				delete client;
+			}
+#endif
+			
 		}
 	
 		return true;
@@ -321,7 +377,7 @@ private:
 	mutex mutex_;
 	thread* thread_;
 	// 正式客户队列
-	vector<ClientSocket*> clients_;		
+	map<SOCKET,ClientSocket*> clients_;		
 	// 缓冲客户对列
 	vector<ClientSocket*> clients_quene_;
 	// 网络事件
@@ -586,8 +642,8 @@ public:
 			Login *login = (Login*)head;
 			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
-			LoginResult ret;
-			client->send_data(&ret);
+			//LoginResult ret;
+			//client->send_data(&ret);
 		}
 		break;
 		case CMD_SIGNOUT:
@@ -612,7 +668,7 @@ public:
 	virtual void on_leave(ClientSocket* client)
 	{
 		clients_count_--;
-		printf("client<%d> leave\n", client->sockfd());
+		//printf("client<%d> leave\n", client->sockfd());
 
 	}
 
@@ -620,7 +676,7 @@ public:
 	virtual void on_join(ClientSocket* client)
 	{
 		clients_count_++;
-		printf("client<%d> join\n", client->sockfd());
+		//printf("client<%d> join\n", client->sockfd());
 	}
 
 private:
