@@ -1,5 +1,8 @@
-﻿#include "tcp_client.hpp"
-
+﻿#include <thread>
+#include <atomic>
+#include "tcp_client.hpp"
+#include "cell_time_stamp.hpp"
+#define  _CRT_SECURE_NO_WARNINGS
 
 bool g_run = true;
 
@@ -23,9 +26,12 @@ void cmd()
 	
 }
 
-const int t_count = 5;    // 线程数量
-const int c_count = 10000; // 客户端数量
+const int t_count = 4;    // 线程数量
+const int c_count = 40; // 客户端数量
 TcpClient *client[c_count];
+std::atomic_int send_count = 0;
+std::atomic_int read_count = 0;
+
 
 void send_thread(int id)
 {
@@ -49,13 +55,18 @@ void send_thread(int id)
 		client[n]->connect_server(ip_local, 4567);
 		
 	}
-
 	printf("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
-	std::chrono::milliseconds t(3000);
-	std::this_thread::sleep_for(t);
+	
+	read_count++;
+	while (read_count < t_count)
+	{
+		// 等待其他线程并发发送数据
+		std::chrono::milliseconds t(10);
+		std::this_thread::sleep_for(t);
+	}
 
-	Login login[10];
-	for (int n = 0; n < 10; n++)
+	Login login[1];
+	for (int n = 0; n < 1; n++)
 	{
 		strcpy(login[n].passwd_, "passwd");
 		strcpy(login[n].username_, "Morris");
@@ -67,8 +78,12 @@ void send_thread(int id)
 	{
 		for (int n = begin; n < end; n++)
 		{
-			client[n]->send_data(login, len);
-			//client[n]->on_run();
+			if (SOCKET_ERROR != client[n]->send_data(login, len))
+			{
+				send_count++;
+				//client[n]->on_run();
+			}
+			
 		}
 	}
 
@@ -95,9 +110,25 @@ int main()
 		thread t1(send_thread, n+1);
 		t1.detach();
 	}
-	
+
+	CellTimeStamp timer;
 	while (g_run)
-		Sleep(100);
+	{
+		auto t = timer.get_elapsed_second();
+		if (t > 1.0)
+		{
+			printf("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, send_count);
+			send_count = 0;
+			timer.update();
+		}
+
+		Sleep(1);
+	}
+
+	
+	std::chrono::milliseconds t(100);
+	while (g_run)
+		std::this_thread::sleep_for(t);
 
 	cout << "exited" << endl;
 

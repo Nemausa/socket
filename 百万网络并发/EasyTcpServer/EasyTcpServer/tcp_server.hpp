@@ -118,7 +118,7 @@ public:
 	// 客户端消息事件
 	virtual void on_net_msg(ClientSocket* client, DataHeader *head) = 0;
 
-
+	virtual void on_recv(ClientSocket* client) = 0;
 	
 private:
 
@@ -166,7 +166,7 @@ public:
 #else
 		for (auto iter : clients_)
 		{
-			closesocket(iter.second->sockfd());
+			close(iter.second->sockfd());
 			delete iter.second;
 		}
 		close(sock_);
@@ -279,6 +279,13 @@ public:
 
 			}
 #else
+
+			vector<ClientSocket*> temp;
+			for (auto client : temp)
+			{
+				clients_.erase(client->sockfd());
+				delete client;
+			}
 			for (auto iter : clients_)
 			{
 				if (FD_ISSET(iter.second->sockfd(), &fd_read))
@@ -294,12 +301,7 @@ public:
 				}
 			}
 
-			vector<ClientSocket*> temp;
-			for (auto client : temp)
-			{
-				clients_.erase(client->sockfd());
-				delete client;
-			}
+			
 #endif
 			
 		}
@@ -312,7 +314,8 @@ public:
 	{
 		int len_head = sizeof(DataHeader);
 		// 接受客户端的请求
-		int len = (int)recv(client->sockfd(), recv_buf_, RECV_BUFF_SIZE, 0);
+		int len = (int)recv(client->sockfd(), recv_buf_, 1, 0);
+		net_event_->on_recv(client);
 
 		if (len <= 0)
 		{
@@ -392,9 +395,11 @@ public:
 	TcpServer()
 	{
 		sock_ = INVALID_SOCKET;
+		memset(recv_buf_, 0, RECV_BUFF_SIZE);
 		msg_count_ = 0;
 		clients_count_ = 0;
-		memset(recv_buf_, 0, RECV_BUFF_SIZE);
+		recv_count_ = 0;
+		
 	}
 	virtual ~TcpServer()
 	{
@@ -585,9 +590,10 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>, recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, int(msg_count_/t));
+			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
 			timer_.update();
 			msg_count_ = 0;
+			recv_count_ = 0;
 		}
 	}
 
@@ -623,6 +629,7 @@ protected:
 	atomic_int msg_count_;
 	// 客户端数量
 	atomic_int clients_count_;
+	atomic_int recv_count_; // recv 函数计数
 
 };
 
@@ -677,6 +684,11 @@ public:
 	{
 		clients_count_++;
 		//printf("client<%d> join\n", client->sockfd());
+	}
+
+	virtual void on_recv(ClientSocket* client)
+	{
+		recv_count_++;
 	}
 
 private:

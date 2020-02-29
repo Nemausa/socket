@@ -26,5 +26,8 @@
     <ClInclude Include="tcp_client.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cell_time_stamp.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
