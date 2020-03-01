@@ -26,6 +26,69 @@ void cmd()
 }
 
 
+class MyServer :public TcpServer
+{
+public:
+	// 多线程出发 不安全
+	virtual void on_net_msg(CellServer* cell_server, ClientSocket* client, DataHeader *head)
+	{
+		TcpServer::on_net_msg(cell_server, client, head);
+		switch (head->cmd_)
+		{
+		case CMD_LOGIN:
+		{
+
+			Login *login = (Login*)head;
+			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
+			// 判断用户密码正确的过程
+			/*LoginResult ret;
+			client->send_data(&ret);*/
+			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
+			LoginResult* ret = new LoginResult();
+			cell_server->add_send_task(client, ret);
+		}
+		break;
+		case CMD_SIGNOUT:
+		{
+
+			SignOut *loginout = (SignOut*)head;
+			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
+			// 判断用户密码正确的过程
+			//SignOutResult ret = {};
+			//send_data(csock, &ret);
+		}
+		break;
+		default:
+			DataHeader ret = {};
+			//send_data(csock, &ret);
+			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
+			break;
+		}
+	}
+
+	// 多线程触发  不安全
+	virtual void on_leave(ClientSocket* client)
+	{
+		TcpServer::on_leave(client);
+
+	}
+
+	// 只会被一个线程触发  安全
+	virtual void on_join(ClientSocket* client)
+	{
+		TcpServer::on_join(client);
+	}
+
+	virtual void on_recv(ClientSocket* client)
+	{
+		TcpServer::on_recv(client);
+	}
+
+private:
+
+};
+
+
 
 
 

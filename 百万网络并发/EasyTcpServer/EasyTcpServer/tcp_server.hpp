@@ -44,6 +44,7 @@
 #include <map>
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
+#include "cell_task.hpp"
 using namespace std;
 
 #ifndef RECV_BUFF_SIZE
@@ -53,7 +54,7 @@ using namespace std;
 
 
 
-
+class CellServer;
 // 客户端数据类型
 class ClientSocket
 {
@@ -162,7 +163,7 @@ public:
 	// 客户端离开事件
 	virtual void on_leave(ClientSocket* client) = 0; // 纯虚函数  继承类必须实现函数功能
 	// 客户端消息事件
-	virtual void on_net_msg(ClientSocket* client, DataHeader *head) = 0;
+	virtual void on_net_msg(CellServer* cell_server,ClientSocket* client, DataHeader *head) = 0;
 
 	virtual void on_recv(ClientSocket* client) = 0;
 	
@@ -171,7 +172,33 @@ private:
 };
 
 
+// 网络消息发送任务
+class CellSend2CellTask:public CellTask
+{
+public:
+	CellSend2CellTask(ClientSocket *client, DataHeader* head)
+	{
+		client_ = client;
+		head_ = head;
+	}
+	~CellSend2CellTask()
+	{
+	}
 
+	void work()
+	{
+		client_->send_data(head_);
+		delete head_;
+	}
+
+private:
+	ClientSocket *client_;
+	DataHeader *head_;
+
+};
+
+
+// 网络消息接收处理服务类
 class CellServer
 {
 public:
@@ -382,7 +409,7 @@ public:
 				// 消息缓冲区剩余未处理的数据
 				int size = client->get_last_pos() - head->length_;
 				// 处理网络消息
-				on_net_msg(client, head);
+				net_msg(client, head);
 				// 将消息缓冲区剩余未处理的数据迁移
 				memcpy(client->msg_buf(), client->msg_buf() + head->length_, size);
 				// 消息缓冲区的尾部位置前移
@@ -399,15 +426,16 @@ public:
 		return 0;
 	}
 
-	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
+	virtual void net_msg(ClientSocket* client, DataHeader *head)
 	{
-		net_event_->on_net_msg(client, head);
+		net_event_->on_net_msg(this, client, head);
 	}
 
 	void start()
 	{
 		//thread_ = new thread(std::mem_fn(&CellServer::on_run), this);
 		thread_ = new thread(&CellServer::on_run, this);
+		task_server_.start();
 	}
 
 	void addClient(ClientSocket* pClient)
@@ -419,6 +447,12 @@ public:
 	unsigned int get_clients_count()
 	{
 		return clients_.size() + clients_quene_.size();
+	}
+
+	void add_send_task(ClientSocket* client, DataHeader *head)
+	{
+		CellSend2CellTask *task = new CellSend2CellTask(client, head);
+		task_server_.add_task(task);
 	}
 private:
 	SOCKET sock_;
@@ -432,6 +466,8 @@ private:
 	vector<ClientSocket*> clients_quene_;
 	// 网络事件
 	INetEvent* net_event_;
+	//
+	CellTaskServer task_server_;
 };
 
 
@@ -647,7 +683,7 @@ public:
 
 
 	// 多线程出发 不安全
-	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
+	virtual void on_net_msg(CellServer* cell_server,ClientSocket* client, DataHeader *head)
 	{
 		msg_count_++;
 	}
@@ -664,6 +700,10 @@ public:
 		clients_count_++;
 	}
 
+	virtual void on_recv(ClientSocket* client)
+	{
+		recv_count_++;
+	}
 
 private:
 	SOCKET sock_;
@@ -681,67 +721,6 @@ protected:
 };
 
 
-class MyServer :public TcpServer
-{
-public:
-	// 多线程出发 不安全
-	virtual void on_net_msg(ClientSocket* client, DataHeader *head)
-	{
-		msg_count_++;
-		switch (head->cmd_)
-		{
-		case CMD_LOGIN:
-		{
-
-			Login *login = (Login*)head;
-			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
-			// 判断用户密码正确的过程
-			LoginResult ret;
-			client->send_data(&ret);
-			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
-		}
-		break;
-		case CMD_SIGNOUT:
-		{
-
-			SignOut *loginout = (SignOut*)head;
-			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
-			// 判断用户密码正确的过程
-			//SignOutResult ret = {};
-			//send_data(csock, &ret);
-		}
-		break;
-		default:
-			DataHeader ret = {};
-			//send_data(csock, &ret);
-			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
-			break;
-		}
-	}
-
-	// 多线程触发  不安全
-	virtual void on_leave(ClientSocket* client)
-	{
-		clients_count_--;
-		//printf("client<%d> leave\n", client->sockfd());
-
-	}
-
-	// 只会被一个线程触发  安全
-	virtual void on_join(ClientSocket* client)
-	{
-		clients_count_++;
-		//printf("client<%d> join\n", client->sockfd());
-	}
-
-	virtual void on_recv(ClientSocket* client)
-	{
-		recv_count_++;
-	}
-
-private:
-
-};
 
 
 #endif

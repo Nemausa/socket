@@ -27,7 +27,7 @@ void cmd()
 }
 
 const int t_count = 5;    // 线程数量
-const int c_count = 10000; // 客户端数量
+const int c_count = 1000; // 客户端数量
 TcpClient *client[c_count];
 std::atomic_int send_count = 0;
 std::atomic_int read_count = 0;

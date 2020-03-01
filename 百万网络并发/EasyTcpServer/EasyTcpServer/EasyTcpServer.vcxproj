@@ -162,6 +162,7 @@
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cell_task.hpp" />
     <ClInclude Include="message.hpp" />
     <ClInclude Include="tcp_server.hpp" />
   </ItemGroup>
