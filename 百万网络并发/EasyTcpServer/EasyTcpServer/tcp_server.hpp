@@ -47,7 +47,8 @@
 using namespace std;
 
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
+#define RECV_BUFF_SIZE 10240*5
+#define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif
 
 
@@ -60,8 +61,10 @@ public:
 	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
 	{
 		sockfd_ = sockfd;
-		last_pos_ = 0;
-		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 5);
+		last_msg_pos_ = 0;
+		last_send_pos_ = 0;
+		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE);
+		memset(sz_send_buf_, 0, SEND_BUFF_SIZE);
 	}
 	virtual ~ClientSocket()
 	{
@@ -80,31 +83,74 @@ public:
 
 	int get_last_pos()
 	{
-		return last_pos_;
+		return last_msg_pos_;
 	}
 
 	void set_last_pos(int pos)
 	{
-		last_pos_ = pos;
+		last_msg_pos_ = pos;
+	}
+
+	int get_send_pos()
+	{
+		return last_send_pos_;
+	}
+
+	void  set_send_pos(int pos)
+	{
+		last_send_pos_ = pos;
 	}
 
 	// 发送数据给指定的客户端
 	int send_data(DataHeader *head)
 	{
-		if ( head)
+		int ret = SOCKET_ERROR;
+		// 发送的数据长度
+		int send_len = head->length_;
+		// 要发送的数据
+		const char* send_data = (const char*)head;
+		while (true)
 		{
-			return send(sockfd_, (const char*)head, head->length_, 0);
+			if (last_send_pos_ + send_len >= SEND_BUFF_SIZE)
+			{
+				// 计算可以拷贝的数据长度
+				int copy_len = SEND_BUFF_SIZE - last_send_pos_;
+				// 拷贝数据到发送缓冲区
+				memcpy(sz_send_buf_+ last_send_pos_, send_data, copy_len);
+				// 计算剩余数据位置
+				send_data += copy_len;
+				// 剩余数据长度
+				send_len -= copy_len;
+
+				ret = send(sockfd_, (const char*)sz_send_buf_, SEND_BUFF_SIZE, 0);
+				// 数据尾部位置清零
+				last_send_pos_ = 0;
+				if (SOCKET_ERROR == ret)
+				{
+					return ret;
+				}
+			}
+			else
+			{
+				// 将要发送的数据拷贝到发送缓冲区尾部
+				memcpy(sz_send_buf_ + last_send_pos_, send_data, send_len);
+				// 数据尾部位置
+				last_send_pos_ += send_len;
+				break;
+			}
 		}
-		return SOCKET_ERROR;
+
+		
+		return ret;
 	}
 
 	
 private:
 	SOCKET sockfd_; // socket fd_set file desc set
-	// 第二缓冲区 消息缓冲区
-	char sz_msg_buf_[RECV_BUFF_SIZE * 5];
-	// 消息缓冲区的数据尾部位置
-	int last_pos_;
+	char sz_msg_buf_[RECV_BUFF_SIZE];  // 第二缓冲区 消息缓冲区
+	char sz_send_buf_[SEND_BUFF_SIZE];  // 第二缓冲区 发送缓冲区
+	int last_msg_pos_;  // 消息缓冲区的数据尾部位置
+	int last_send_pos_; // 发送缓冲区尾部位置
 };
 
 // 网络事件
@@ -266,9 +312,9 @@ public:
 						clients_change_ = true;
 						if (net_event_)
 							net_event_->on_leave(iter->second);
-
-						clients_.erase(iter->first);
 						delete iter->second;
+						clients_.erase(iter->first);
+						
 					}
 				}
 				else
@@ -315,7 +361,7 @@ public:
 		int len_head = sizeof(DataHeader);
 		// 接受客户端的请求
 		char *recv_buf = client->msg_buf() + client->get_last_pos();
-		int len = (int)recv(client->sockfd(), recv_buf, RECV_BUFF_SIZE*5-client->get_last_pos(), 0);
+		int len = (int)recv(client->sockfd(), recv_buf, RECV_BUFF_SIZE-client->get_last_pos(), 0);
 		net_event_->on_recv(client);
 
 		if (len <= 0)
@@ -652,6 +698,7 @@ public:
 			// 判断用户密码正确的过程
 			LoginResult ret;
 			client->send_data(&ret);
+			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 		}
 		break;
 		case CMD_SIGNOUT:
