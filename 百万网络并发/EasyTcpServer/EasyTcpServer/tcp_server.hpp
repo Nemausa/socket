@@ -650,8 +650,8 @@ public:
 			Login *login = (Login*)head;
 			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
-			//LoginResult ret;
-			//client->send_data(&ret);
+			LoginResult ret;
+			client->send_data(&ret);
 		}
 		break;
 		case CMD_SIGNOUT:
