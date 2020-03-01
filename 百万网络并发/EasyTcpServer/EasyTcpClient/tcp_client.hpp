@@ -31,7 +31,7 @@ class TcpClient
 public:
 	SOCKET sock_;
 	bool is_connect_;
-	char sz_recv_buf_[RECV_BUFF_SIZE];		// 接收缓冲区
+	//char sz_recv_buf_[RECV_BUFF_SIZE];		// 接收缓冲区
 	char sz_msg_buf_[RECV_BUFF_SIZE * 5];	// 消息缓冲区 
 	int last_pos_;
 public:
@@ -40,7 +40,7 @@ public:
 		sock_ = INVALID_SOCKET;
 		last_pos_ = 0;
 		is_connect_ = false;
-		memset(sz_recv_buf_, 0, RECV_BUFF_SIZE);
+		//memset(sz_recv_buf_, 0, RECV_BUFF_SIZE);
 		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 5);
 
 	}
@@ -170,8 +170,9 @@ public:
 	{
 		int len_head = sizeof(DataHeader);
 		
+		char *sz_recv_buf = sz_msg_buf_ + last_pos_;
 		// 接受数据
-		int len = recv(sock_, sz_recv_buf_, RECV_BUFF_SIZE, 0);
+		int len = recv(sock_, sz_recv_buf, RECV_BUFF_SIZE*5-last_pos_, 0);
 		if (len <= 0)
 		{
 			printf("socket=<%d> disconnect from server", (int)sock_);
@@ -179,7 +180,7 @@ public:
 		}
 
 		// 将收取的数据拷贝到消息缓冲区
-		memcpy(sz_msg_buf_+last_pos_, sz_recv_buf_, len);
+		//memcpy(sz_msg_buf_+last_pos_, sz_recv_buf_, len);
 		// 消息缓冲区的数据尾部位置后移
 		last_pos_ += len;
 		// 判断消息缓冲区的数据长度大于消息头的长度

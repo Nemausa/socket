@@ -314,7 +314,8 @@ public:
 	{
 		int len_head = sizeof(DataHeader);
 		// 接受客户端的请求
-		int len = (int)recv(client->sockfd(), recv_buf_, 1, 0);
+		char *recv_buf = client->msg_buf() + client->get_last_pos();
+		int len = (int)recv(client->sockfd(), recv_buf, RECV_BUFF_SIZE*5-client->get_last_pos(), 0);
 		net_event_->on_recv(client);
 
 		if (len <= 0)
@@ -323,7 +324,7 @@ public:
 			return -1;
 		}
 		// 将收取的数据拷贝到消息缓冲区
-		memcpy(client->msg_buf() + client->get_last_pos(), recv_buf_, len);
+		//memcpy(client->msg_buf() + client->get_last_pos(), recv_buf_, len);
 		client->set_last_pos(client->get_last_pos() + len);
 		while (client->get_last_pos() >= sizeof(DataHeader))
 		{
@@ -375,7 +376,7 @@ public:
 	}
 private:
 	SOCKET sock_;
-	char recv_buf_[RECV_BUFF_SIZE];
+	//char recv_buf_[RECV_BUFF_SIZE];
 	// 缓冲队列的锁
 	mutex mutex_;
 	thread* thread_;

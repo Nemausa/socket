@@ -26,8 +26,8 @@ void cmd()
 	
 }
 
-const int t_count = 4;    // 线程数量
-const int c_count = 40; // 客户端数量
+const int t_count = 5;    // 线程数量
+const int c_count = 10000; // 客户端数量
 TcpClient *client[c_count];
 std::atomic_int send_count = 0;
 std::atomic_int read_count = 0;
@@ -65,8 +65,8 @@ void send_thread(int id)
 		std::this_thread::sleep_for(t);
 	}
 
-	Login login[1];
-	for (int n = 0; n < 1; n++)
+	Login login[10];
+	for (int n = 0; n < 10; n++)
 	{
 		strcpy(login[n].passwd_, "passwd");
 		strcpy(login[n].username_, "Morris");
@@ -80,9 +80,9 @@ void send_thread(int id)
 		{
 			if (SOCKET_ERROR != client[n]->send_data(login, len))
 			{
-				send_count++;
-				//client[n]->on_run();
+				send_count++;	
 			}
+			client[n]->on_run();
 			
 		}
 	}
@@ -117,7 +117,7 @@ int main()
 		auto t = timer.get_elapsed_second();
 		if (t > 1.0)
 		{
-			printf("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, send_count);
+			printf("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
 			send_count = 0;
 			timer.update();
 		}
