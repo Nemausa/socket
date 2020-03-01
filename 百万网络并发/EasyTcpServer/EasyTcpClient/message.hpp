@@ -27,8 +27,9 @@ enum CMD
 
 struct DataHeader
 {
-	short cmd_;
 	short length_;
+	short cmd_;
+	
 };
 
 struct Login : public DataHeader
