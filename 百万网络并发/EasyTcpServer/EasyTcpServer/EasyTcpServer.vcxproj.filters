@@ -41,5 +41,8 @@
     <ClInclude Include="memory_mg.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cell_object_pool.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

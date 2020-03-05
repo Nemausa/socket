@@ -128,7 +128,7 @@ public:
 			assert(0 == block->ref_);
 			block->ref_ = 1;
 		}
-		xprintf("allocmem:%10llx, id=%5d, size=%5d \n", block, block->id_, size);
+		xprintf("allocmem:%x, id=%d, size=%d \n", block, block->id_, size);
 		return ((char*)block+sizeof(MemoryBlock));
 
 	}
@@ -195,6 +195,11 @@ private:
 		init_map(129, 256, &mem256_);
 		init_map(257, 512, &mem512_);
 		init_map(513, 1024, &mem1024_);
+		mem64_.alloc_mem(64);
+		mem128_.alloc_mem(128);
+		mem256_.alloc_mem(256);
+		mem512_.alloc_mem(512);
+		mem1024_.alloc_mem(1024);
 	}
 	~MemoryMg()
 	{
@@ -224,7 +229,7 @@ public:
 			block->in_pool_ = false;
 			block->alloc_ = nullptr;
 			block->next_ = nullptr;
-			xprintf("allocmem:%10llx, id=%5d, size=%5d \n", block, block->id_, size);
+			xprintf("allocmem:%x, id=%5d, size=%5d \n", block, block->id_, size);
 			return (char*)block+sizeof(MemoryBlock);
 		}
 
@@ -234,7 +239,7 @@ public:
 	void free_mem(void* mem)
 	{
 		MemoryBlock* block = (MemoryBlock*)((char*)mem - sizeof(MemoryBlock));
-		xprintf("freemem: %10llx, id=%5d \n", block, block->id_);
+		xprintf("freemem: %x, id=%5d \n", block, block->id_);
 		if (block->in_pool_)
 		{
 			block->alloc_->free_memory(mem);

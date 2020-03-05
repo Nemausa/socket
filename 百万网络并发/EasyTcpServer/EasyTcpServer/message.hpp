@@ -64,4 +64,16 @@ struct NewUserJoin :public DataHeader
 	int id_socket;
 };
 
+class ClientSocket;
+class CellTask;
+class CellS2CTask;
+class CellServer;
+
+typedef std::shared_ptr<ClientSocket> client_socket_ptr;
+typedef std::shared_ptr<CellTask> cell_task_ptr;
+typedef std::shared_ptr<CellS2CTask> CellS2CTaskPtr;
+typedef std::shared_ptr<CellServer> cell_server_ptr;
+typedef std::shared_ptr<DataHeader> data_head_ptr;
+typedef std::shared_ptr<LoginResult> login_result_ptr;
+
 #endif

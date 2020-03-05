@@ -164,6 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alloctor.h" />
+    <ClInclude Include="cell_object_pool.hpp" />
     <ClInclude Include="cell_task.hpp" />
     <ClInclude Include="memory_mg.hpp" />
     <ClInclude Include="message.hpp" />

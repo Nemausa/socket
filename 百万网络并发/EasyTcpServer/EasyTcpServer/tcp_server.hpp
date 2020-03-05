@@ -35,16 +35,19 @@
 #endif
 
 #include <iostream>
+#include <memory>
 #include <stdio.h>
 #include <vector>
 #include <thread>
 #include <mutex>
 #include <atomic>
+
 #include <functional>
 #include <map>
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
+#include "cell_object_pool.hpp"
 using namespace std;
 
 #ifndef RECV_BUFF_SIZE
@@ -54,9 +57,10 @@ using namespace std;
 
 
 
+
 class CellServer;
 // 客户端数据类型
-class ClientSocket
+class ClientSocket:public ObjectPoolBase<ClientSocket, 10000>
 {
 public:
 	ClientSocket(SOCKET sockfd = INVALID_SOCKET)
@@ -93,13 +97,13 @@ public:
 	}
 
 	// 发送数据给指定的客户端
-	int send_data(DataHeader *head)
+	int send_data(data_head_ptr& head)
 	{
 		int ret = SOCKET_ERROR;
 		// 发送的数据长度
 		int send_len = head->length_;
 		// 要发送的数据
-		const char* pSendData = (const char*)head;
+		const char* pSendData = (const char*)head.get();
 		while (true)
 		{
 			if (last_send_pos_ + send_len >= SEND_BUFF_SIZE)
@@ -144,18 +148,21 @@ private:
 	int last_send_pos_; // 发送缓冲区尾部位置
 };
 
+
+
+
 // 网络事件
 class INetEvent
 {
 public:
 	// 客户端加入事件
-	virtual void on_join(ClientSocket* client) = 0;
+	virtual void on_join(client_socket_ptr& client) = 0;
 	// 客户端离开事件
-	virtual void on_leave(ClientSocket* client) = 0; // 纯虚函数  继承类必须实现函数功能
+	virtual void on_leave(client_socket_ptr& client) = 0; // 纯虚函数  继承类必须实现函数功能
 	// 客户端消息事件
-	virtual void on_net_msg(CellServer* cell_server,ClientSocket* client, DataHeader *head) = 0;
+	virtual void on_net_msg(CellServer* cell_server,client_socket_ptr& client, DataHeader *head) = 0;
 
-	virtual void on_recv(ClientSocket* client) = 0;
+	virtual void on_recv(client_socket_ptr& client) = 0;
 	
 private:
 
@@ -163,29 +170,31 @@ private:
 
 
 // 网络消息发送任务
-class CellSend2CellTask:public CellTask
+class CellS2CTask:public CellTask
 {
 public:
-	CellSend2CellTask(ClientSocket *client, DataHeader* head)
+	CellS2CTask(client_socket_ptr& client, data_head_ptr& head)
 	{
 		client_ = client;
 		head_ = head;
 	}
-	~CellSend2CellTask()
+	~CellS2CTask()
 	{
 	}
 
 	void work()
 	{
 		client_->send_data(head_);
-		delete head_;
+
 	}
 
 private:
-	ClientSocket *client_;
-	DataHeader *head_;
+	client_socket_ptr client_;
+	data_head_ptr head_;
 
 };
+
+
 
 
 // 网络消息接收处理服务类
@@ -221,7 +230,6 @@ public:
 		for(auto iter:clients_)
 		{
 			closesocket(iter.second->sockfd());
-			delete iter.second;
 		}
 		// 关闭套接字
 		closesocket(sock_);
@@ -230,7 +238,6 @@ public:
 		for (auto iter : clients_)
 		{
 			close(iter.second->sockfd());
-			delete iter.second;
 		}
 		close(sock_);
 #endif
@@ -331,7 +338,6 @@ public:
 						
 						if (net_event_)
 							net_event_->on_leave(iter->second);
-						//delete iter->second;
 						clients_.erase(iter->first);
 						clients_change_ = true;
 						
@@ -346,11 +352,10 @@ public:
 			}
 #else
 
-			vector<ClientSocket*> temp;
+			vector<client_socket_ptr> temp;
 			for (auto client : temp)
 			{
 				clients_.erase(client->sockfd());
-				delete client;
 			}
 			for (auto iter : clients_)
 			{
@@ -376,7 +381,7 @@ public:
 	}
 
 	// 接受数据 处理粘包 拆分包
-	int recv_data(ClientSocket *client)
+	int recv_data(client_socket_ptr client)
 	{
 		int len_head = sizeof(DataHeader);
 		// 接受客户端的请求
@@ -419,7 +424,7 @@ public:
 		return 0;
 	}
 
-	virtual void net_msg(ClientSocket* client, DataHeader *head)
+	virtual void net_msg(client_socket_ptr client, DataHeader *head)
 	{
 		net_event_->on_net_msg(this, client, head);
 	}
@@ -431,7 +436,7 @@ public:
 		task_server_.start();
 	}
 
-	void addClient(ClientSocket* pClient)
+	void addClient(client_socket_ptr pClient)
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 		clients_quene_.push_back(pClient);
@@ -442,10 +447,10 @@ public:
 		return clients_.size() + clients_quene_.size();
 	}
 
-	void add_send_task(ClientSocket* client, DataHeader *head)
+	void add_send_task(client_socket_ptr& client, data_head_ptr& head)
 	{
-		CellSend2CellTask *task = new CellSend2CellTask(client, head);
-		task_server_.add_task(task);
+		CellS2CTaskPtr task = std::make_shared<CellS2CTask>(client, head);
+		task_server_.add_task((cell_task_ptr)task);
 	}
 private:
 	SOCKET sock_;
@@ -454,14 +459,16 @@ private:
 	mutex mutex_;
 	thread* thread_;
 	// 正式客户队列
-	map<SOCKET,ClientSocket*> clients_;		
+	map<SOCKET,client_socket_ptr> clients_;		
 	// 缓冲客户对列
-	vector<ClientSocket*> clients_quene_;
+	vector<client_socket_ptr> clients_quene_;
 	// 网络事件
 	INetEvent* net_event_;
 	//
 	CellTaskServer task_server_;
 };
+
+
 
 
 
@@ -580,13 +587,15 @@ public:
 		else
 		{
 			// 将客户端分配给最小的处理线程
-			add_client_to_server(new ClientSocket(csock));
+			client_socket_ptr c(new ClientSocket(csock));
+			add_client_to_server(c);
+			//add_client_to_server(std::make_shared<ClientSocket>(csock));
 		}
 		// 获取ip地址：inet_ntoa(client_addr.sin_addr)
 		return csock;
 	}
 
-	void add_client_to_server(ClientSocket* client)
+	void add_client_to_server(client_socket_ptr client)
 	{
 		auto min_server = cell_servers_[0];
 		// 查找客户端最少的cellserver处理线程
@@ -604,6 +613,7 @@ public:
 
 		for (int n = 0; n < servers; n++)
 		{
+			//auto ser = std::make_shared<CellServer>(sock_);
 			auto ser = new CellServer(sock_);
 			cell_servers_.push_back(ser);
 			// 注册网络事件接受对象
@@ -661,14 +671,15 @@ public:
 	}
 
 	// 网络消息计数
+	double t = 0;
 	void time_for_msg()
 	{
-		auto t = timer_.get_elapsed_second();
+		t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			/*printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
-				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, (int)recv_count_);*/
-			cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
+				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, (int)recv_count_);
+			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 			timer_.update();
 			msg_count_ = 0;
 			recv_count_ = 0;
@@ -678,24 +689,24 @@ public:
 
 
 	// 多线程出发 不安全
-	virtual void on_net_msg(CellServer* cell_server,ClientSocket* client, DataHeader *head)
+	virtual void on_net_msg(CellServer* cell_server,client_socket_ptr& client, DataHeader *head)
 	{
 		msg_count_++;
 	}
 
 	// 多线程触发  不安全
-	virtual void on_leave(ClientSocket* client)
+	virtual void on_leave(client_socket_ptr& client)
 	{
 		clients_count_--;
 	}
 
 	// 只会被一个线程触发  安全
-	virtual void on_join(ClientSocket* client)
+	virtual void on_join(client_socket_ptr& client)
 	{
 		clients_count_++;
 	}
 
-	virtual void on_recv(ClientSocket* client)
+	virtual void on_recv(client_socket_ptr& client)
 	{
 		recv_count_++;
 	}

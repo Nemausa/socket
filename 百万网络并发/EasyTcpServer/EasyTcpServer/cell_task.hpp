@@ -15,6 +15,8 @@
 #include <thread>
 #include <mutex>
 #include <list>
+#include <memory>
+
 
 class CellTask
 {
@@ -38,10 +40,11 @@ private:
 
 };
 
-class CellTaskServer:public CellTask
+
+class CellTaskServer
 {
 public:
-	void add_task(CellTask* task)
+	void add_task(cell_task_ptr& task)
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
 		task_buf_.push_back(task);
@@ -81,7 +84,7 @@ public:
 			for (auto task:task_list_)
 			{
 				task->work();
-				delete task;
+				
 			}
 
 			task_list_.clear();
@@ -92,8 +95,8 @@ public:
 	}
 
 private:
-	std::list<CellTask*> task_list_;  // task data
-	std::list<CellTask*> task_buf_;   // task data buffer
+	std::list<cell_task_ptr> task_list_;  // task data
+	std::list<cell_task_ptr> task_buf_;   // task data buffer
 	std::mutex mutex_;  // need to lock when changing the data buffer
 };
 

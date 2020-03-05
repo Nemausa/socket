@@ -120,6 +120,7 @@ public:
 			block->in_pool_ = false;
 			block->alloc_ = this;
 			block->next_ = nullptr;
+			xprintf("alloc_mem:%llx, id=%d, size=%d\n", block, block->id_, size);
 		}
 		else
 		{
@@ -128,7 +129,7 @@ public:
 			assert(0 == block->ref_);
 			block->ref_ = 1;
 		}
-		xprintf("allocmem:%10llx, id=%5d, size=%5d \n", block, block->id_, size);
+		xprintf("allocmem:%llx, id=%5d, size=%5d \n", block, block->id_, size);
 		return ((char*)block+sizeof(MemoryBlock));
 
 	}
@@ -224,7 +225,7 @@ public:
 			block->in_pool_ = false;
 			block->alloc_ = nullptr;
 			block->next_ = nullptr;
-			xprintf("allocmem:%10llx, id=%5d, size=%5d \n", block, block->id_, size);
+			xprintf("allocmem:%llx, id=%5d, size=%5d \n", block, block->id_, size);
 			return (char*)block+sizeof(MemoryBlock);
 		}
 
@@ -262,8 +263,8 @@ private:
 		}
 	}
 private:
-	MemoryAlloctor<100000, 64>	mem64_;
-	MemoryAlloctor<1000000, 128> mem128_;
+	MemoryAlloctor<5000000, 64>	mem64_;
+	MemoryAlloctor<2000000, 128> mem128_;
 	//MemoryAlloctor<100000, 256> mem256_;
 	//MemoryAlloctor<100000, 512> mem512_;
 	//MemoryAlloctor<100000, 1024> mem1024_;
