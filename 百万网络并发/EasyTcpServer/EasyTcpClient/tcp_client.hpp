@@ -65,7 +65,7 @@ public:
 		// 1.建立一个socket
 		if (INVALID_SOCKET != sock_)
 		{
-			cout << "close old socket:" << sock_ << endl;
+			cout << "close old socket" << endl;
 			close_socket();
 		}
 		sock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -110,8 +110,7 @@ public:
 	// 关闭socket
 	void close_socket()
 	{
-	
-		is_connect_ = false;
+		
 		if (INVALID_SOCKET == sock_)
 			return;
 		
@@ -123,49 +122,46 @@ public:
 		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
-		
+		is_connect_ = false;
 	}
 
 
 	// 处理网络消息
 	bool on_run()
 	{
-		if (is_run())
-		{
-			fd_set fd_read;
-			FD_ZERO(&fd_read);
-			FD_SET(sock_, &fd_read);
+		if (!is_run())
+			return false;
 
-			timeval tm = { 0, 0 };
-			int ret = select((int)sock_ + 1, &fd_read, 0, 0, &tm);
-			if (ret < 0)
+		fd_set fd_read;
+		FD_ZERO(&fd_read);
+		FD_SET(sock_, &fd_read);
+
+		timeval tm = { 0, 0 };
+		int ret = select((int)sock_+1, &fd_read, 0, 0, &tm);
+		if (ret < 0)
+		{
+			cout << "select taks ends 1" << endl;
+			close_socket();
+			return false;
+		}
+		if (FD_ISSET(sock_, &fd_read))
+		{
+			FD_CLR(sock_, &fd_read);
+			if (-1 == recv_data(sock_))
 			{
-				cout << "select taks ends 1" << endl;
+				cout << "select task ends 2" << endl;
 				close_socket();
 				return false;
 			}
-			if (FD_ISSET(sock_, &fd_read))
-			{
-				FD_CLR(sock_, &fd_read);
-				if (-1 == recv_data(sock_))
-				{
-					cout << "select task ends 2" << sock_ << endl;
-					close_socket();
-					return false;
-				}
-			}
-			return true;
-
 		}
 
-		
 		return true;
 	}
 
 	// 是否运行
 	bool is_run()
 	{
-		return INVALID_SOCKET != sock_ && is_connect_;
+		return INVALID_SOCKET != sock_;
 	}
 
 	

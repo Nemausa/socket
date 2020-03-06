@@ -96,6 +96,16 @@ public:
 		last_msg_pos_ = pos;
 	}
 
+	int get_send_pos()
+	{
+		return last_send_pos_;
+	}
+
+	void  set_send_pos(int pos)
+	{
+		last_send_pos_ = pos;
+	}
+
 	// 发送数据给指定的客户端
 	int send_data(data_head_ptr& head)
 	{
@@ -103,7 +113,11 @@ public:
 		// 发送的数据长度
 		int send_len = head->length_;
 		// 要发送的数据
+<<<<<<< HEAD
 		const char* pSendData = (const char*)head.get();
+=======
+		const char* send_data = (const char*)head;
+>>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
 		while (true)
 		{
 			if (last_send_pos_ + send_len >= SEND_BUFF_SIZE)
@@ -111,13 +125,13 @@ public:
 				// 计算可以拷贝的数据长度
 				int copy_len = SEND_BUFF_SIZE - last_send_pos_;
 				// 拷贝数据到发送缓冲区
-				memcpy(sz_send_buf_+ last_send_pos_, pSendData, copy_len);
+				memcpy(sz_send_buf_+ last_send_pos_, send_data, copy_len);
 				// 计算剩余数据位置
-				pSendData += copy_len;
+				send_data += copy_len;
 				// 剩余数据长度
 				send_len -= copy_len;
 
-				ret = send(sockfd_,sz_send_buf_, SEND_BUFF_SIZE, 0);
+				ret = send(sockfd_, (const char*)sz_send_buf_, SEND_BUFF_SIZE, 0);
 				// 数据尾部位置清零
 				last_send_pos_ = 0;
 				if (SOCKET_ERROR == ret)
@@ -128,7 +142,7 @@ public:
 			else
 			{
 				// 将要发送的数据拷贝到发送缓冲区尾部
-				memcpy(sz_send_buf_ + last_send_pos_, pSendData, send_len);
+				memcpy(sz_send_buf_ + last_send_pos_, send_data, send_len);
 				// 数据尾部位置
 				last_send_pos_ += send_len;
 				break;
@@ -233,7 +247,7 @@ public:
 		}
 		// 关闭套接字
 		closesocket(sock_);
-		//WSACleanup();
+		WSACleanup();
 #else
 		for (auto iter : clients_)
 		{
@@ -257,7 +271,7 @@ public:
 	bool clients_change_;
 	SOCKET max_socket_;
 	// 处理网络消息
-	void on_run()
+	bool on_run()
 	{
 		clients_change_ = true;
 		while (is_run())
@@ -270,7 +284,7 @@ public:
 			//	_Inout_opt_ fd_set FAR * exceptfds,		错误集合
 			//	_In_opt_ const struct timeval FAR * timeout   空则阻塞下去
 			//	);
-			if (!clients_quene_.empty())  // 有新客户
+			if (clients_quene_.size() > 0)  // 有新客户
 			{
 				lock_guard<mutex> lg(mutex_);
 				for (auto client : clients_quene_)
@@ -292,8 +306,6 @@ public:
 			max_socket_ = clients_.begin()->second->sockfd();
 			if (clients_change_)
 			{
-				clients_change_ = false;
-				max_socket_ = clients_.begin()->second->sockfd();
 				for (auto iter : clients_)
 				{
 					FD_SET(iter.second->sockfd(), &fd_read);
@@ -302,7 +314,7 @@ public:
 				}
 
 				memcpy(&fd_read_back_, &fd_read, sizeof(fd_set));
-				
+				clients_change_ = false;
 			}
 			else
 			{
@@ -319,7 +331,7 @@ public:
 			{
 				cout << "select ends" << endl;
 				close_socket();
-				return;
+				return false;
 			}
 			else if (ret == 0)
 			{
@@ -335,11 +347,14 @@ public:
 				{
 					if (-1 == recv_data(iter->second))
 					{
-						
+						clients_change_ = true;
 						if (net_event_)
 							net_event_->on_leave(iter->second);
+<<<<<<< HEAD
+=======
+						delete iter->second;
+>>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
 						clients_.erase(iter->first);
-						clients_change_ = true;
 						
 					}
 				}
@@ -377,7 +392,7 @@ public:
 			
 		}
 	
-		return;
+		return true;
 	}
 
 	// 接受数据 处理粘包 拆分包
@@ -677,9 +692,13 @@ public:
 		t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
+<<<<<<< HEAD
 			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
 				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, (int)recv_count_);
 			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+=======
+			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
+>>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
 			timer_.update();
 			msg_count_ = 0;
 			recv_count_ = 0;

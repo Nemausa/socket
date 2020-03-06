@@ -60,7 +60,9 @@ public:
 		}
 		break;
 		default:
-			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), head->length_);
+			DataHeader ret = {};
+			//send_data(csock, &ret);
+			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
 			break;
 		}
 	}

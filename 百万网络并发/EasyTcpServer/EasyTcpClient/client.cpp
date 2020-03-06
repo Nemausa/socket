@@ -69,7 +69,7 @@ void send_thread(int id)
 	for (int n = 0; n < 10; n++)
 	{
 		strcpy(login[n].passwd_, "passwd");
-		strcpy(login[n].username_, "morris");
+		strcpy(login[n].username_, "Morris");
 	}
 
 	const int len = sizeof(login);
@@ -118,7 +118,7 @@ int main()
 	while (g_run)
 	{
 		auto t = timer.get_elapsed_second();
-		if (t >=1.0)
+		if (t > 1.0)
 		{
 			printf("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
 			send_count = 0;
@@ -129,7 +129,9 @@ int main()
 	}
 
 	
-
+	std::chrono::milliseconds t(100);
+	while (g_run)
+		std::this_thread::sleep_for(t);
 
 	cout << "exited" << endl;
 
