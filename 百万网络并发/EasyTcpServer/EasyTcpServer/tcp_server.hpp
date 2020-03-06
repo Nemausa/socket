@@ -113,11 +113,7 @@ public:
 		// 发送的数据长度
 		int send_len = head->length_;
 		// 要发送的数据
-<<<<<<< HEAD
-		const char* pSendData = (const char*)head.get();
-=======
-		const char* send_data = (const char*)head;
->>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
+		const char* send_data = (const char*)head.get();
 		while (true)
 		{
 			if (last_send_pos_ + send_len >= SEND_BUFF_SIZE)
@@ -350,10 +346,7 @@ public:
 						clients_change_ = true;
 						if (net_event_)
 							net_event_->on_leave(iter->second);
-<<<<<<< HEAD
-=======
-						delete iter->second;
->>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
+
 						clients_.erase(iter->first);
 						
 					}
@@ -692,13 +685,13 @@ public:
 		t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-<<<<<<< HEAD
+
 			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
 				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, (int)recv_count_);
 			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
-=======
-			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
->>>>>>> parent of 3f565fa... 解决客户端退出  服务器崩溃问题   主要是delete iter->second;
+
+			//printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
+
 			timer_.update();
 			msg_count_ = 0;
 			recv_count_ = 0;
