@@ -32,7 +32,7 @@ public:
 	SOCKET sock_;
 	bool is_connect_;
 	//char sz_recv_buf_[RECV_BUFF_SIZE];		// 接收缓冲区
-	char sz_msg_buf_[RECV_BUFF_SIZE * 5];	// 消息缓冲区 
+	char sz_msg_buf_[RECV_BUFF_SIZE];	// 消息缓冲区 
 	int last_pos_;
 public:
 	TcpClient()
@@ -41,7 +41,7 @@ public:
 		last_pos_ = 0;
 		is_connect_ = false;
 		//memset(sz_recv_buf_, 0, RECV_BUFF_SIZE);
-		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE * 5);
+		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE);
 
 	}
 
@@ -176,7 +176,7 @@ public:
 		
 		char *sz_recv_buf = sz_msg_buf_ + last_pos_;
 		// 接受数据
-		int len = recv(sock_, sz_recv_buf, RECV_BUFF_SIZE*5-last_pos_, 0);
+		int len = recv(sock_, sz_recv_buf, RECV_BUFF_SIZE-last_pos_, 0);
 		if (len <= 0)
 		{
 			printf("socket=<%d> disconnect from server", (int)sock_);
