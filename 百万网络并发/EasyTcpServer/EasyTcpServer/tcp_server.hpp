@@ -25,6 +25,15 @@ using namespace std;
 #include <functional>
 #include <map>
 
+#include "message.hpp"
+#include "cell_time_stamp.hpp"
+#include "cell_task.hpp"
+using namespace std;
+
+#ifndef RECV_BUFF_SIZE
+#define RECV_BUFF_SIZE 10240*5
+#define SEND_BUFF_SIZE RECV_BUFF_SIZE
+#endif
 
 #include "cell.hpp"
 #include "cell_client.hpp"
@@ -233,9 +242,13 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
+
 			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
 				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
 			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+
+			//printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
+
 			timer_.update();
 			msg_count_ = 0;
 			recv_count_ = 0;

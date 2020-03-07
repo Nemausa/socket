@@ -29,8 +29,8 @@ enum CMD
 
 struct NetDataHeader
 {
-	short length_;
 	short cmd_;
+	short length_;
 };
 
 struct NetLogin : public NetDataHeader
