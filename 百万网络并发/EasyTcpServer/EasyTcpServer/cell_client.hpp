@@ -17,7 +17,9 @@
 #include "cell.hpp"
 
 // 客户端心跳检测死亡计时
-#define CLIENT_HEART_DEAD_TIME 5000
+#define CLIENT_HEART_DEAD_TIME 60000
+// 指定时间发送缓冲区数据
+#define CLIENT_SEND_TIME 200
 
 // 客户端数据类型
 class CellClient
@@ -25,12 +27,13 @@ class CellClient
 public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET)
 	{
-		dt_heart_ = 0;
 		sockfd_ = sockfd;
 		last_msg_pos_ = 0;
 		last_send_pos_ = 0;
 		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE);
 		memset(sz_send_buf_, 0, SEND_BUFF_SIZE);
+		reset_send();
+		reset_heart();
 	}
 	virtual ~CellClient()
 	{
@@ -57,6 +60,22 @@ public:
 		last_msg_pos_ = pos;
 	}
 
+	// 立即将缓冲区数据发送出去
+	int send_now()
+	{
+		int ret = SOCKET_ERROR;
+		if (last_send_pos_ > 0)
+		{
+			ret = send(sockfd_, sz_send_buf_, last_send_pos_, 0);
+			printf("send now:socket=%d, time=%d, length=%d\n", sockfd_, dt_send_, last_send_pos_);
+			// 数据尾部位置清零
+			last_send_pos_ = 0;
+			reset_send();
+		}
+		return ret;
+
+	}
+
 	// 发送数据给指定的客户端
 	int send_data(NetDataHeader *head)
 	{
@@ -77,10 +96,10 @@ public:
 				pSendData += copy_len;
 				// 剩余数据长度
 				send_len -= copy_len;
-
 				ret = send(sockfd_, sz_send_buf_, SEND_BUFF_SIZE, 0);
 				// 数据尾部位置清零
 				last_send_pos_ = 0;
+				reset_send();
 				if (SOCKET_ERROR == ret)
 				{
 					return ret;
@@ -116,13 +135,35 @@ public:
 		return false;
 		//return dt_heart_ >= CLIENT_HEART_DEAD_TIME;
 	}
+
+	void reset_send()
+	{
+		dt_send_ = 0;
+	}
+
+	bool check_send(time_t dt)
+	{
+		dt_send_ += dt;
+		if (dt_send_ >= CLIENT_SEND_TIME)
+		{
+			printf("check send:socket=%d, time=%d\n", sockfd_, dt_send_);
+			// 立即发送缓冲区的数据
+			send_now();
+			reset_send();
+			return true;
+		}
+		return false;
+	}
+
+
 private:
 	SOCKET sockfd_; // socket fd_set file desc set
-	char sz_msg_buf_[RECV_BUFF_SIZE];  // 第二缓冲区 消息缓冲区
+	char sz_msg_buf_[RECV_BUFF_SIZE];	// 第二缓冲区 消息缓冲区
 	char sz_send_buf_[SEND_BUFF_SIZE];  // 第二缓冲区 发送缓冲区
-	int last_msg_pos_;  // 消息缓冲区的数据尾部位置
-	int last_send_pos_; // 发送缓冲区尾部位置
-	time_t dt_heart_;    // 心跳死亡计时
+	int last_msg_pos_;					// 消息缓冲区的数据尾部位置
+	int last_send_pos_;					// 发送缓冲区尾部位置
+	time_t dt_heart_;					// 心跳死亡计时
+	time_t dt_send_;					// 上次发送消息的时间
 };
 
 #endif  // !CELL_CLIENT_HPP_

@@ -26,8 +26,8 @@ void cmd()
 	
 }
 
-const int t_count = 5;    // 线程数量
-const int c_count = 1000; // 客户端数量
+const int t_count = 1;    // 线程数量
+const int c_count = 1; // 客户端数量
 TcpClient *client[c_count];
 std::atomic_int send_count = 0;
 std::atomic_int read_count = 0;
@@ -82,8 +82,8 @@ void send_thread(int id)
 		strcpy(login[n].passwd_, "passwd");
 		strcpy(login[n].username_, "morris");
 	}
-	//std::thread t1(recv_thread, begin, end);
-	//t1.detach();
+	std::thread t1(recv_thread, begin, end);
+	t1.detach();
 
 	const int len = sizeof(login);
 
@@ -94,7 +94,7 @@ void send_thread(int id)
 				send_count++;	
 			
 		
-		//std::chrono::milliseconds t(10);
+		//std::chrono::milliseconds t(100);
 		//std::this_thread::sleep_for(t);
 	}
 

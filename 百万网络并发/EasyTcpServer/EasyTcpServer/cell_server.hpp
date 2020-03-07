@@ -174,6 +174,7 @@ public:
 		old_time_ = now;
 		for (auto iter = clients_.begin(); iter != clients_.end();)
 		{
+			// 心跳检测
 			if (iter->second->check_heart(dt))
 			{
 				if (net_event_)
@@ -189,9 +190,13 @@ public:
 				auto iterold = iter++;
 				clients_.erase(iterold);
 				clients_change_ = true;
+				continue;
 			}
-			else
-				iter++;
+			// 定时发送检测
+			iter->second->check_send(dt);
+			iter++;
+
+			
 		}
 	}
 	void read_data(fd_set& fd_read)
