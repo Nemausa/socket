@@ -15,36 +15,15 @@
 #include <thread>
 #include <mutex>
 #include <list>
-#include <memory>
+#include <functional>
 
-
-class CellTask
-{
-public:
-	CellTask()
-	{
-
-	}
-	virtual ~CellTask()
-	{
-
-	}
-
-	// 执行任务
-	virtual void work()
-	{
-
-	}
-
-private:
-
-};
 
 
 class CellTaskServer
 {
+	typedef std::function<void()> CellTask;
 public:
-	void add_task(cell_task_ptr& task)
+	void add_task(CellTask task)
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
 		task_buf_.push_back(task);
@@ -83,8 +62,7 @@ public:
 			// do task
 			for (auto task:task_list_)
 			{
-				task->work();
-				
+				task();
 			}
 
 			task_list_.clear();
@@ -95,9 +73,9 @@ public:
 	}
 
 private:
-	std::list<cell_task_ptr> task_list_;  // task data
-	std::list<cell_task_ptr> task_buf_;   // task data buffer
+	std::list<CellTask> task_list_;  // task data
+	std::list<CellTask> task_buf_;   // task data buffer
 	std::mutex mutex_;  // need to lock when changing the data buffer
 };
 
-#endif//CELL_TASK_HPP_
+#endif  //CELL_TASK_HPP_

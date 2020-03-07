@@ -1,9 +1,8 @@
-﻿#include "alloctor.h"
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
+using namespace std;
 #include "tcp_server.hpp"
 #include <thread>
-using namespace std;
 
 bool g_run = true;
 void cmd()
@@ -31,7 +30,7 @@ class MyServer :public TcpServer
 {
 public:
 	// 多线程出发 不安全
-	virtual void on_net_msg(CellServer* cell_server, client_socket_ptr&  client, DataHeader *head)
+	virtual void on_net_msg(CellServer* cell_server, CellClient* client, NetDataHeader *head)
 	{
 		TcpServer::on_net_msg(cell_server, client, head);
 		switch (head->cmd_)
@@ -39,20 +38,20 @@ public:
 		case CMD_LOGIN:
 		{
 
-			Login *login = (Login*)head;
-			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)client->sockfd(), login->length_, login->username_, login->passwd_);
+			NetLogin *login = (NetLogin*)head;
+			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			/*LoginResult ret;
 			client->send_data(&ret);*/
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
-			auto ret = std::make_shared<LoginResult>();
-			cell_server->add_send_task(client, (data_head_ptr)ret);
+			NetLoginR* ret = new NetLoginR();
+			cell_server->add_send_task(client, ret);
 		}
 		break;
 		case CMD_SIGNOUT:
 		{
 
-			SignOut *loginout = (SignOut*)head;
+			NetMsgSignOut *loginout = (NetMsgSignOut*)head;
 			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
 			// 判断用户密码正确的过程
 			//SignOutResult ret = {};
@@ -66,19 +65,19 @@ public:
 	}
 
 	// 多线程触发  不安全
-	virtual void on_leave(client_socket_ptr&  client)
+	virtual void on_leave(CellClient* client)
 	{
 		TcpServer::on_leave(client);
 
 	}
 
 	// 只会被一个线程触发  安全
-	virtual void on_join(client_socket_ptr&  client)
+	virtual void on_join(CellClient* client)
 	{
 		TcpServer::on_join(client);
 	}
 
-	virtual void on_recv(client_socket_ptr&  client)
+	virtual void on_recv(CellClient* client)
 	{
 		TcpServer::on_recv(client);
 	}
@@ -99,8 +98,8 @@ int main()
 	server1.listen_port(5);
 	server1.start(6);
 
-	/*thread cmd_thread1(cmd);
-	cmd_thread1.detach();*/
+	thread cmd_thread1(cmd);
+	cmd_thread1.detach();
 
 	while (g_run)
 	{	

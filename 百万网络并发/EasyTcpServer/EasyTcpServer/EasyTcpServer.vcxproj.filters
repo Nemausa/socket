@@ -21,9 +21,6 @@
     <ClCompile Include="cell_time_stamp.hpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="alloctor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cell_task.hpp">
@@ -35,13 +32,16 @@
     <ClInclude Include="tcp_server.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="alloctor.h">
+    <ClInclude Include="cell.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="memory_mg.hpp">
+    <ClInclude Include="cell_client.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="cell_object_pool.hpp">
+    <ClInclude Include="cell_server.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="net_event.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
