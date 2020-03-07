@@ -76,28 +76,24 @@ void send_thread(int id)
 		std::this_thread::sleep_for(t);
 	}
 
-	Login login[10];
+	NetLogin login[10];
 	for (int n = 0; n < 10; n++)
 	{
 		strcpy(login[n].passwd_, "passwd");
 		strcpy(login[n].username_, "morris");
 	}
-	std::thread t1(recv_thread, begin, end);
-	t1.detach();
+	//std::thread t1(recv_thread, begin, end);
+	//t1.detach();
 
 	const int len = sizeof(login);
 
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
-		{
 			if (SOCKET_ERROR != client[n]->send_data(login, len))
-			{
 				send_count++;	
-			}
 			
-		}
-
+		
 		//std::chrono::milliseconds t(10);
 		//std::this_thread::sleep_for(t);
 	}

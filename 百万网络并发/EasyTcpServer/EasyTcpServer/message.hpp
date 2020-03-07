@@ -22,6 +22,8 @@ enum CMD
 	CMD_SIGNOUT,
 	CMD_SIGNOUT_RESULT,
 	CMD_NEW_USER_JOIN,
+	CMD_HEART_C2S,
+	CMD_HEART_S2C,
 	CMD_ERROR
 };
 
@@ -63,5 +65,24 @@ struct NetNewUserJoin :public NetDataHeader
 	NetNewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NetNewUserJoin); id_socket = 0; }
 	int id_socket;
 };
+
+struct Net_C2S_Heart:public NetDataHeader
+{
+	Net_C2S_Heart()
+	{
+		length_ = sizeof(Net_C2S_Heart);
+		cmd_ = CMD_HEART_C2S;
+	}
+};
+
+struct Net_S2C_Heart :public NetDataHeader
+{
+	Net_S2C_Heart()
+	{
+		length_ = sizeof(Net_S2C_Heart);
+		cmd_ = CMD_HEART_S2C;
+	}
+};
+
 
 #endif

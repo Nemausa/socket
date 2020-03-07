@@ -172,7 +172,7 @@ public:
 	// 接受数据 处理粘包 拆包
 	int recv_data(SOCKET _csock)
 	{
-		int len_head = sizeof(DataHeader);
+		int len_head = sizeof(NetDataHeader);
 		
 		char *sz_recv_buf = sz_msg_buf_ + last_pos_;
 		// 接受数据
@@ -188,10 +188,10 @@ public:
 		// 消息缓冲区的数据尾部位置后移
 		last_pos_ += len;
 		// 判断消息缓冲区的数据长度大于消息头的长度
-		while (last_pos_ >= sizeof(DataHeader))
+		while (last_pos_ >= sizeof(NetDataHeader))
 		{
 			// 这时就可以知道当前消息体的长度
-			DataHeader *head = (DataHeader*)sz_msg_buf_;
+			NetDataHeader *head = (NetDataHeader*)sz_msg_buf_;
 			// 判断消息缓冲区的数据长度大于消息长度
 			if (last_pos_ >= head->length_)
 			{
@@ -215,26 +215,26 @@ public:
 	}
 
 	// 响应网络消息
-	virtual void on_net_msg(DataHeader *head)
+	virtual void on_net_msg(NetDataHeader *head)
 	{
 		// 处理请求
 		switch (head->cmd_)
 		{
 		case CMD_LOGIN_RESULT:
 		{
-			LoginResult *login = (LoginResult*)head;
+			NetLoginR *login = (NetLoginR*)head;
 			//cout << "socket=" << sock_ << "command:CMD_LOGIN_RESULT" << "data length:" << login->length_ << endl;
 		}
 		break;
 		case CMD_SIGNOUT_RESULT:
 		{
-			SignOutResult *loginout = (SignOutResult*)head;
+			NetLoginR *loginout = (NetLoginR*)head;
 			//cout << "socket=" << sock_ << "command:CMD_SIGNOUT_RESULT" << "data length:" << loginout->length_ << endl;
 		}
 		break;
 		case  CMD_NEW_USER_JOIN:
 		{
-			NewUserJoin *user = (NewUserJoin*)head;
+			NetNewUserJoin *user = (NetNewUserJoin*)head;
 			//cout << "socket=" << sock_ << "command:CMD_NEW_USER_JOIN" << "data length:" << user->length_ << endl;
 		}
 		break;
@@ -250,7 +250,7 @@ public:
 	}
 
 	// 发送数据
-	int send_data(DataHeader *head, int length)
+	int send_data(NetDataHeader *head, int length)
 	{
 		int ret = SOCKET_ERROR;
 		if (is_run() && head)

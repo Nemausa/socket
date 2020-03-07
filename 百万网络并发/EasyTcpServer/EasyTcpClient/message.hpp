@@ -10,7 +10,7 @@
 * (note: this needs exactly one @defgroup somewhere)
 *
 * @date	2020-02-21
-* @author Morris
+* @author morris
 * contact: tappanmorris@outlook.com
 *
 */
@@ -22,47 +22,67 @@ enum CMD
 	CMD_SIGNOUT,
 	CMD_SIGNOUT_RESULT,
 	CMD_NEW_USER_JOIN,
+	CMD_HEART_C2S,
+	CMD_HEART_S2C,
 	CMD_ERROR
 };
 
-struct DataHeader
+struct NetDataHeader
 {
 	short length_;
 	short cmd_;
-	
 };
 
-struct Login : public DataHeader
+struct NetLogin : public NetDataHeader
 {
-	Login() { cmd_ = CMD_LOGIN; length_ = sizeof(Login); }
+	NetLogin() { cmd_ = CMD_LOGIN; length_ = sizeof(NetLogin); }
 	char username_[32];
 	char passwd_[32];
 	char data[32];
 };
 
-struct LoginResult :public DataHeader
+struct NetLoginR :public NetDataHeader
 {
-	LoginResult() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(LoginResult); result_ = 0; }
+	NetLoginR() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(NetLoginR); result_ = 0; }
 	int result_;
 	char data[92];
 };
 
-struct SignOut :public DataHeader
+struct NetMsgSignOut :public NetDataHeader
 {
-	SignOut() { cmd_ = CMD_SIGNOUT, length_ = sizeof(SignOut); }
+	NetMsgSignOut() { cmd_ = CMD_SIGNOUT, length_ = sizeof(NetMsgSignOut); }
 	char username_[32];
 };
 
-struct SignOutResult :public DataHeader
+struct NetSignOutR :public NetDataHeader
 {
-	SignOutResult() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(SignOutResult); result_ = 0; }
+	NetSignOutR() { cmd_ = CMD_SIGNOUT_RESULT, length_ = sizeof(NetSignOutR); result_ = 0; }
 	int result_;
 };
 
-struct NewUserJoin :public DataHeader
+struct NetNewUserJoin :public NetDataHeader
 {
-	NewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NewUserJoin); id_socket = 0; }
+	NetNewUserJoin() { cmd_ = CMD_NEW_USER_JOIN, length_ = sizeof(NetNewUserJoin); id_socket = 0; }
 	int id_socket;
 };
+
+struct Net_C2S_Heart :public NetDataHeader
+{
+	Net_C2S_Heart()
+	{
+		length_ = sizeof(Net_C2S_Heart);
+		cmd_ = CMD_HEART_C2S;
+	}
+};
+
+struct Net_S2C_Heart :public NetDataHeader
+{
+	Net_S2C_Heart()
+	{
+		length_ = sizeof(Net_S2C_Heart);
+		cmd_ = CMD_HEART_S2C;
+	}
+};
+
 
 #endif

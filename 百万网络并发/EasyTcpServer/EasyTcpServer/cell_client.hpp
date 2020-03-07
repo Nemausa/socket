@@ -16,6 +16,8 @@
 */
 #include "cell.hpp"
 
+// 客户端心跳检测死亡计时
+#define CLIENT_HEART_DEAD_TIME 5000
 
 // 客户端数据类型
 class CellClient
@@ -23,6 +25,7 @@ class CellClient
 public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET)
 	{
+		dt_heart_ = 0;
 		sockfd_ = sockfd;
 		last_msg_pos_ = 0;
 		last_send_pos_ = 0;
@@ -97,13 +100,29 @@ public:
 		return ret;
 	}
 
+	void reset_heart()
+	{
+		dt_heart_ = 0;
+	}
 
+	bool check_heart(time_t dt)
+	{
+		dt_heart_ += dt;
+		if (dt_heart_ >= CLIENT_HEART_DEAD_TIME)
+		{
+			printf("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
+			return true;
+		}
+		return false;
+		//return dt_heart_ >= CLIENT_HEART_DEAD_TIME;
+	}
 private:
 	SOCKET sockfd_; // socket fd_set file desc set
 	char sz_msg_buf_[RECV_BUFF_SIZE];  // 第二缓冲区 消息缓冲区
 	char sz_send_buf_[SEND_BUFF_SIZE];  // 第二缓冲区 发送缓冲区
 	int last_msg_pos_;  // 消息缓冲区的数据尾部位置
 	int last_send_pos_; // 发送缓冲区尾部位置
+	time_t dt_heart_;    // 心跳死亡计时
 };
 
 #endif  // !CELL_CLIENT_HPP_
