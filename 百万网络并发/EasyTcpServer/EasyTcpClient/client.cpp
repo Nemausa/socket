@@ -80,7 +80,7 @@ void send_thread(int id)
 	for (int n = 0; n < 10; n++)
 	{
 		strcpy(login[n].passwd_, "passwd");
-		strcpy(login[n].username_, "Morris");
+		strcpy(login[n].username_, "morris");
 	}
 	std::thread t1(recv_thread, begin, end);
 	t1.detach();
