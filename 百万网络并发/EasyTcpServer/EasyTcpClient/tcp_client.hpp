@@ -136,7 +136,7 @@ public:
 		FD_ZERO(&fd_read);
 		FD_SET(sock_, &fd_read);
 
-		timeval tm = { 0, 0 };
+		timeval tm = { 0, 1 };
 		int ret = select((int)sock_+1, &fd_read, 0, 0, &tm);
 		if (ret < 0)
 		{

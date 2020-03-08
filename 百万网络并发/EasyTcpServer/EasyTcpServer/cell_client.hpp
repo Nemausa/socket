@@ -73,58 +73,44 @@ public:
 	// 立即将缓冲区数据发送出去
 	int send_now()
 	{
-		int ret = SOCKET_ERROR;
+		int ret = 0;
 		if (last_send_pos_ > 0)
 		{
 			ret = send(sockfd_, sz_send_buf_, last_send_pos_, 0);
 			//printf("send now:socket=%d, time=%d, length=%d\n", sockfd_, dt_send_, last_send_pos_);
 			// 数据尾部位置清零
 			last_send_pos_ = 0;
+			send_buf_count_ = 0;
 			reset_send();
 		}
 		return ret;
 
 	}
 
+	// 缓冲区的控制根据业务需求的差异而调整
 	// 发送数据给指定的客户端
 	int send_data(NetDataHeader *head)
 	{
-		int ret = SOCKET_ERROR;
+		int ret = 0;
 		// 发送的数据长度
 		int send_len = head->length_;
 		// 要发送的数据
 		const char* pSendData = (const char*)head;
-		while (true)
-		{
-			if (last_send_pos_ + send_len >= SEND_BUFF_SIZE)
-			{
-				// 计算可以拷贝的数据长度
-				int copy_len = SEND_BUFF_SIZE - last_send_pos_;
-				// 拷贝数据到发送缓冲区
-				memcpy(sz_send_buf_ + last_send_pos_, pSendData, copy_len);
-				// 计算剩余数据位置
-				pSendData += copy_len;
-				// 剩余数据长度
-				send_len -= copy_len;
-				ret = send(sockfd_, sz_send_buf_, SEND_BUFF_SIZE, 0);
-				// 数据尾部位置清零
-				last_send_pos_ = 0;
-				reset_send();
-				if (SOCKET_ERROR == ret)
-				{
-					return ret;
-				}
-			}
-			else
-			{
-				// 将要发送的数据拷贝到发送缓冲区尾部
-				memcpy(sz_send_buf_ + last_send_pos_, pSendData, send_len);
-				// 数据尾部位置
-				last_send_pos_ += send_len;
-				break;
-			}
+		
+		if (last_send_pos_ + send_len <= SEND_BUFF_SIZE)
+		{	
+			// 将要发送的数据拷贝到发送缓冲区尾部
+			memcpy(sz_send_buf_ + last_send_pos_, pSendData, send_len);
+			// 数据尾部位置
+			last_send_pos_ += send_len;
+			if (last_send_pos_ == SEND_BUFF_SIZE)
+				send_buf_count_++;
+			return send_len;
 		}
-
+		else
+		{
+			send_buf_count_++;
+		}
 
 		return ret;
 	}
@@ -175,6 +161,7 @@ private:
 	char sz_send_buf_[SEND_BUFF_SIZE];  // 第二缓冲区 发送缓冲区
 	int last_msg_pos_;					// 消息缓冲区的数据尾部位置
 	int last_send_pos_;					// 发送缓冲区尾部位置
+	int send_buf_count_ = 0;			// 缓冲区写满的次数
 	time_t dt_heart_;					// 心跳死亡计时
 	time_t dt_send_;					// 上次发送消息的时间
 };

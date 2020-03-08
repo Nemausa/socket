@@ -113,11 +113,14 @@ public:
 
 
 			fd_set fd_read;
-			FD_ZERO(&fd_read);
+			fd_set fd_write;
+			fd_set fd_except;
+			
 			max_socket_ = clients_.begin()->second->sockfd();
 			if (clients_change_)
 			{
 				clients_change_ = false;
+				FD_ZERO(&fd_read);
 				max_socket_ = clients_.begin()->second->sockfd();
 				for (auto iter : clients_)
 				{
@@ -134,12 +137,15 @@ public:
 				memcpy(&fd_read, &fd_read_back_, sizeof(fd_set));
 			}
 
+			memcpy(&fd_write, &fd_read_back_, sizeof(fd_set));
+			memcpy(&fd_except, &fd_read_back_, sizeof(fd_set));
+
 
 
 			// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 			// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 			timeval t = { 0, 1};
-			int ret = select((int)max_socket_ + 1, &fd_read, nullptr, nullptr, &t);
+			int ret = select((int)max_socket_ + 1, &fd_read, &fd_write, &fd_except, &t);
 			if (ret < 0)
 			{
 				printf("CellServer%d.on_run.select error \n", id_);
@@ -152,13 +158,17 @@ public:
 			}*/
 
 			read_data(fd_read);
+			write_data(fd_write);
+			//write_data(fd_except);
 			check_time();
-
+			//printf("CellServer%d.on_run.select: fd_read=%d, fd_write=%d \n", id_, fd_read.fd_count, fd_write.fd_count);
 		}
 		printf("CellServer%d.on_run\n", id_);
 		
 		
 	}
+
+
 	
 	void check_time()
 	{
@@ -170,20 +180,27 @@ public:
 			// 心跳检测
 			if (iter->second->check_heart(dt))
 			{
-				if (net_event_)
-					net_event_->on_leave(iter->second);	
-				delete iter->second;
+				on_client_leave(iter->second);
 				auto iterold = iter++;
 				clients_.erase(iterold);
-				clients_change_ = true;
+				
 				continue;
 			}
 			// 定时发送检测
-			iter->second->check_send(dt);
+			//iter->second->check_send(dt);
 			iter++;
 
 			
 		}
+	}
+
+	void on_client_leave(CellClient* pclient)
+	{
+		if (net_event_)
+			net_event_->on_leave(pclient);
+		delete pclient;
+		clients_change_ = true;
+
 	}
 	void read_data(fd_set& fd_read)
 	{
@@ -195,44 +212,75 @@ public:
 			{
 				if (-1 == recv_data(iter->second))
 				{
-
-					if (net_event_)
-						net_event_->on_leave(iter->second);
-					delete iter->second;
+					on_client_leave(iter->second);
 					clients_.erase(iter);
-					clients_change_ = true;	
+					
 				}
 			}
-			else
-			{
-				printf("error,if (iter != clients_.end())");
-			}
-
 
 		}
 #else
 
-		vector<CellClient*> temp;
 		for (auto iter : clients_)
 		{
 			if (FD_ISSET(iter.second->sockfd(), &fd_read))
 			{
 				if (-1 == recv_data(iter.second))
 				{
-					clients_change_ = true;
-					if (net_event_)
-						net_event_->on_leave(iter.second);
-					close(iter->first);
-					temp.push_back(iter.second);
+					on_client_leave(iter->second);
+					auto iter_old = iter;
+					iter++;
+					clients_.erase(iter_old);
+					iter++;
+					continue;
 
 				}
+				iter++:
 			}
 		}
-		
-		for (auto client : temp)
+	
+#endif
+	}
+
+	void write_data(fd_set& fd_read)
+	{
+
+#ifdef _WIN32
+		for (int n = 0; n < fd_read.fd_count; n++)
 		{
-			clients_.erase(client->sockfd());
-			delete client;
+			auto iter = clients_.find(fd_read.fd_array[n]);
+			if (iter != clients_.end())
+			{
+				if (-1 == iter->second->send_now())
+				{
+
+					on_client_leave(iter->second);
+					clients_.erase(iter);
+				
+				}
+			}
+
+
+
+		}
+#else
+
+		for (auto iter : clients_)
+		{
+			if (FD_ISSET(iter.second->sockfd(), &fd_read))
+			{
+				if (-1 == iter->second->send_now())
+				{
+					on_client_leave(iter->second);
+					auto iter_old = iter;
+					iter++;
+					clients_.erase(iter_old);
+					iter++;
+					continue;
+
+				}
+				iter++:
+			}
 		}
 
 #endif
