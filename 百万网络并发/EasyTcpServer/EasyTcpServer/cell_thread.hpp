@@ -24,7 +24,7 @@ private:
 public:
 	CellThread()
 	{
-
+		is_start_ = false;
 	}
 	~CellThread() 
 	{

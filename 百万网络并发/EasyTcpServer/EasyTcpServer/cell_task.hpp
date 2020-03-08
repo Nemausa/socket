@@ -35,7 +35,7 @@ public:
 	{
 		thread_.start(nullptr, [this](CellThread* pthread) {
 			on_run(pthread);
-		});
+		}, nullptr);
 	}
 
 	void exit()

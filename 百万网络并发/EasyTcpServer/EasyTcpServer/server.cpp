@@ -115,10 +115,10 @@ int main()
 		server1.on_run();
 	}
 	server1.close_socket();
-	/*CellTaskServer task;
-	task.start();
-	Sleep(100);
-	task.close();*/
+	//CellTaskServer task;
+	//task.start();
+	//Sleep(100);
+	//task.exit();
 
 	while (true)
 	{
