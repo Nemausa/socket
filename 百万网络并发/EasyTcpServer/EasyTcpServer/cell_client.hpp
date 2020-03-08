@@ -27,6 +27,8 @@ class CellClient
 public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET)
 	{
+		static int n = 1;
+		id = n++;
 		sockfd_ = sockfd;
 		last_msg_pos_ = 0;
 		last_send_pos_ = 0;
@@ -37,7 +39,15 @@ public:
 	}
 	virtual ~CellClient()
 	{
+		printf("server=%d, CellClient%d.~CellClient\n", server_id,id);
+		if (INVALID_SOCKET == sockfd_)
+			return;
 
+#ifdef _WIN32
+		closesocket(sockfd_);
+#else
+		close(sockfd_);
+#endif
 	}
 
 	SOCKET sockfd()
@@ -67,7 +77,7 @@ public:
 		if (last_send_pos_ > 0)
 		{
 			ret = send(sockfd_, sz_send_buf_, last_send_pos_, 0);
-			printf("send now:socket=%d, time=%d, length=%d\n", sockfd_, dt_send_, last_send_pos_);
+			//printf("send now:socket=%d, time=%d, length=%d\n", sockfd_, dt_send_, last_send_pos_);
 			// 数据尾部位置清零
 			last_send_pos_ = 0;
 			reset_send();
@@ -129,7 +139,7 @@ public:
 		dt_heart_ += dt;
 		if (dt_heart_ >= CLIENT_HEART_DEAD_TIME)
 		{
-			printf("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
+			//printf("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
 			return true;
 		}
 		return false;
@@ -146,7 +156,7 @@ public:
 		dt_send_ += dt;
 		if (dt_send_ >= CLIENT_SEND_TIME)
 		{
-			printf("check send:socket=%d, time=%d\n", sockfd_, dt_send_);
+			//printf("check send:socket=%d, time=%d\n", sockfd_, dt_send_);
 			// 立即发送缓冲区的数据
 			send_now();
 			reset_send();
@@ -155,6 +165,9 @@ public:
 		return false;
 	}
 
+public:
+	int id = -1;
+	int server_id = -1;
 
 private:
 	SOCKET sockfd_; // socket fd_set file desc set

@@ -31,7 +31,7 @@ using namespace std;
 using namespace std;
 
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240*5
+#define RECV_BUFF_SIZE 10240
 #define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif
 
@@ -180,7 +180,7 @@ public:
 
 		for (int n = 0; n < servers; n++)
 		{
-			auto ser = new CellServer(sock_);
+			auto ser = new CellServer(n+1);
 			cell_servers_.push_back(ser);
 			// 注册网络事件接受对象
 			ser->set_event(this);
@@ -192,15 +192,21 @@ public:
 	// 关闭socket
 	void close_socket()
 	{
+		printf("Tcp_Server.close_socket 1\n");
 		if (INVALID_SOCKET == sock_)
-			return;
+			return; 
 
+		for (auto s : cell_servers_)
+			delete s;
+		cell_servers_.clear();
 #ifdef _WIN32
 		// 关闭套接字
 		closesocket(sock_);
 #else
 		close(sock_);
 #endif
+		sock_ = INVALID_SOCKET;
+		printf("Tcp_Server.close_socket 2\n");
 
 	}
 

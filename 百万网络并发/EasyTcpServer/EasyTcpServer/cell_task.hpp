@@ -17,7 +17,7 @@
 #include <list>
 #include <functional>
 
-
+#include "cell_signal.hpp"
 
 class CellTaskServer
 {
@@ -32,16 +32,31 @@ public:
 
 	void start()
 	{
-		// thread
+		if (is_run_)
+			return;
+		is_run_ = true;
 		std::thread t(std::mem_fn(&CellTaskServer::on_run), this);
 		t.detach();
 	}
 
+	void exit()
+	{
+		if (!is_run_)
+			return;
+		
+		printf("CellTaskServer%d.close begin\n", server_id_);
+		is_run_ = false;
+		// 阻塞等待on_run执行完毕
+		singal_.wait();
+		printf("CellTaskServer%d.close end\n", server_id_);
+		
+	}
+
+
 	void on_run()
 	{
-		while (true)
+		while (is_run_)
 		{
-			// get data from task buffer
 			if (!task_buf_.empty())
 			{
 				std::lock_guard<std::mutex> lg(mutex_);
@@ -59,23 +74,25 @@ public:
 				continue;
 			}
 
-			// do task
 			for (auto task:task_list_)
-			{
 				task();
-			}
 
 			task_list_.clear();
 
-		}
-		
-		
+		}	
+		printf("CellTaskServer%d.on_run exit\n", server_id_);
+		singal_.wakeup();
 	}
-
+public:
+	int server_id_=-1;  // 所属server的id
 private:
-	std::list<CellTask> task_list_;  // task data
-	std::list<CellTask> task_buf_;   // task data buffer
-	std::mutex mutex_;  // need to lock when changing the data buffer
+	std::list<CellTask> task_list_;		// task data
+	std::list<CellTask> task_buf_;		// task data buffer
+	std::mutex mutex_;					// need to lock when changing the data buffer
+
+	CellSignal singal_;
+	bool is_run_ = false;
+
 };
 
 #endif  //CELL_TASK_HPP_

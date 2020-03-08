@@ -20,14 +20,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="message.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tcp_client.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="message.hpp">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="cell_time_stamp.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
