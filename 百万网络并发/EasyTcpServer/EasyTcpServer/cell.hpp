@@ -16,7 +16,7 @@
 */
 
 #ifdef _WIN32
-#define FD_SETSIZE      2506
+#define FD_SETSIZE      1024
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <windows.h>
@@ -26,6 +26,7 @@
 #include <unistd.h>  // unix std
 #include <arpa/inet.h>
 #include <string.h>
+#include <signal.h>
 #define SOCKET int
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define SOCKET_ERROR            (-1)

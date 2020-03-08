@@ -93,6 +93,11 @@ public:
 		WORD version = MAKEWORD(2, 2);
 		WSADATA dat;
 		WSAStartup(version, &dat);
+#else
+		/*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+			return 1;*/
+		// 忽略异常情况，默认会导致进程退出
+		signal(SIGPIPE, SIG_IGN);
 #endif
 		if (INVALID_SOCKET != sock_)
 		{
@@ -199,7 +204,7 @@ public:
 				min_server = cell;
 		}
 		min_server->addClient(client);
-		on_join(client);
+		//on_join(client);
 	}
 
 	void start(int servers)
@@ -247,10 +252,7 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-
-			printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d> \n",
-				(int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
-			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+			cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
 			//printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
 

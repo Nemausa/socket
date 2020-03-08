@@ -114,7 +114,7 @@ public:
 
 			fd_set fd_read;
 			fd_set fd_write;
-			fd_set fd_except;
+			//fd_set fd_except;
 			
 			max_socket_ = clients_.begin()->second->sockfd();
 			if (clients_change_)
@@ -138,14 +138,14 @@ public:
 			}
 
 			memcpy(&fd_write, &fd_read_back_, sizeof(fd_set));
-			memcpy(&fd_except, &fd_read_back_, sizeof(fd_set));
+			//memcpy(&fd_except, &fd_read_back_, sizeof(fd_set));
 
 
 
 			// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 			// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 			timeval t = { 0, 1};
-			int ret = select((int)max_socket_ + 1, &fd_read, &fd_write, &fd_except, &t);
+			int ret = select((int)max_socket_ + 1, &fd_read, &fd_write, nullptr, &t);
 			if (ret < 0)
 			{
 				printf("CellServer%d.on_run.select error \n", id_);
@@ -221,34 +221,33 @@ public:
 		}
 #else
 
-		for (auto iter : clients_)
+		for (auto iter = clients_.begin(); iter != clients_.end();)
 		{
-			if (FD_ISSET(iter.second->sockfd(), &fd_read))
+			if (FD_ISSET(iter->second->sockfd(), &fd_read))
 			{
-				if (-1 == recv_data(iter.second))
+				if (-1 == recv_data(iter->second))
 				{
 					on_client_leave(iter->second);
 					auto iter_old = iter;
 					iter++;
 					clients_.erase(iter_old);
-					iter++;
 					continue;
 
 				}
-				iter++:
+				iter++;
 			}
 		}
 	
 #endif
 	}
 
-	void write_data(fd_set& fd_read)
+	void write_data(fd_set& fd_write)
 	{
 
 #ifdef _WIN32
-		for (int n = 0; n < fd_read.fd_count; n++)
+		for (int n = 0; n < fd_write.fd_count; n++)
 		{
-			auto iter = clients_.find(fd_read.fd_array[n]);
+			auto iter = clients_.find(fd_write.fd_array[n]);
 			if (iter != clients_.end())
 			{
 				if (-1 == iter->second->send_now())
@@ -265,9 +264,9 @@ public:
 		}
 #else
 
-		for (auto iter : clients_)
+		for (auto iter = clients_.begin(); iter != clients_.end();)
 		{
-			if (FD_ISSET(iter.second->sockfd(), &fd_read))
+			if (FD_ISSET(iter->second->sockfd(), &fd_write))
 			{
 				if (-1 == iter->second->send_now())
 				{
@@ -275,11 +274,10 @@ public:
 					auto iter_old = iter;
 					iter++;
 					clients_.erase(iter_old);
-					iter++;
 					continue;
 
 				}
-				iter++:
+				iter++;
 			}
 		}
 

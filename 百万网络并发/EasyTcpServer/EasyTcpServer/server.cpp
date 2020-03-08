@@ -25,6 +25,8 @@ void cmd()
 
 }
 
+CellTimeStamp timer;
+auto t = timer.get_elapsed_second();
 
 class MyServer :public TcpServer
 {
@@ -42,9 +44,10 @@ public:
 			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			NetLoginR ret;
-			if (0 == client->send_data(&ret))
+			//if (0 == client->send_data(&ret))
 			{
 				// 发送缓冲区满了，消息还没有发送出去
+				//printf("<socket=%d> send full \n", client->sockfd());
 			}
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 			/*NetLoginR* ret = new NetLoginR();
@@ -133,7 +136,8 @@ int main()
 
 	while (true)
 	{
-		Sleep(1);
+		std::chrono::microseconds dura(1);
+		std::this_thread::sleep_for(dura);
 	}
 	printf("已退出\n");
 	return 0;
