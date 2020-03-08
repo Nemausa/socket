@@ -167,6 +167,7 @@
     <ClInclude Include="cell_server.hpp" />
     <ClInclude Include="cell_signal.hpp" />
     <ClInclude Include="cell_task.hpp" />
+    <ClInclude Include="cell_thread.hpp" />
     <ClInclude Include="message.hpp" />
     <ClInclude Include="net_event.hpp" />
     <ClInclude Include="tcp_server.hpp" />

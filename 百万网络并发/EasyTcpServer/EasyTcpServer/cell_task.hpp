@@ -18,6 +18,7 @@
 #include <functional>
 
 #include "cell_signal.hpp"
+#include "cell_thread.hpp"
 
 class CellTaskServer
 {
@@ -32,30 +33,23 @@ public:
 
 	void start()
 	{
-		if (is_run_)
-			return;
-		is_run_ = true;
-		std::thread t(std::mem_fn(&CellTaskServer::on_run), this);
-		t.detach();
+		thread_.start(nullptr, [this](CellThread* pthread) {
+			on_run(pthread);
+		});
 	}
 
 	void exit()
 	{
-		if (!is_run_)
-			return;
-		
 		printf("CellTaskServer%d.close begin\n", server_id_);
-		is_run_ = false;
-		// 阻塞等待on_run执行完毕
-		singal_.wait();
+		thread_.close();
 		printf("CellTaskServer%d.close end\n", server_id_);
 		
 	}
 
 
-	void on_run()
+	void on_run(CellThread* pthread)
 	{
-		while (is_run_)
+		while (pthread->is_run())
 		{
 			if (!task_buf_.empty())
 			{
@@ -81,7 +75,7 @@ public:
 
 		}	
 		printf("CellTaskServer%d.on_run exit\n", server_id_);
-		singal_.wakeup();
+		
 	}
 public:
 	int server_id_=-1;  // 所属server的id
@@ -89,9 +83,7 @@ private:
 	std::list<CellTask> task_list_;		// task data
 	std::list<CellTask> task_buf_;		// task data buffer
 	std::mutex mutex_;					// need to lock when changing the data buffer
-
-	CellSignal singal_;
-	bool is_run_ = false;
+	CellThread thread_;
 
 };
 

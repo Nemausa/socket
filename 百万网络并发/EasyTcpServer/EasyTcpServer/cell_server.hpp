@@ -24,7 +24,7 @@ using namespace std;
 #include "cell.hpp"
 #include "cell_client.hpp"
 #include "net_event.hpp"
-#include "cell_signal.hpp"
+#include "cell_thread.hpp"
 
 
 // 网络消息接收处理服务类
@@ -51,26 +51,35 @@ public:
 		net_event_ = net_event;
 	}
 
+	void start()
+	{
+		task_server_.start();
+		thread_.start(nullptr, 
+			[this](CellThread* pthread) {
+			on_run(pthread); 
+			},
+			[this](CellThread* pthread) {
+				clear_clients();
+			});
+	}
+
 	// 关闭socket
 	void exit()
 	{
 		printf("CellServer%d.close_socket begin\n", id_);
+		
+		task_server_.exit();
+		thread_.close();
 
-		if (!is_run_)
-			return;
-	
-		is_run_ = false;
-		task_server_.exit();   // 必须先等待后唤醒，不然造成死锁
-		signal_.wait();
 		printf("CellServer%d.close_socket end\n", id_);
 
 
 	}
 
 	// 处理网络消息
-	void on_run()
+	void on_run(CellThread* pthread)
 	{
-		while (is_run_)
+		while (pthread->is_run())
 		{
 			// 伯克利套接字 BSD socket
 			//select(
@@ -133,9 +142,9 @@ public:
 			int ret = select((int)max_socket_ + 1, &fd_read, nullptr, nullptr, &t);
 			if (ret < 0)
 			{
-				cout << "select ends" << endl;
-				exit();
-				return;
+				printf("CellServer%d.on_run.select error \n", id_);
+				pthread->exit();
+				break;
 			}
 			/*else if (ret == 0)
 			{
@@ -147,8 +156,8 @@ public:
 
 		}
 		printf("CellServer%d.on_run\n", id_);
-		celar_clients();
-		signal_.wakeup();
+		
+		
 	}
 	
 	void check_time()
@@ -279,15 +288,7 @@ public:
 		net_event_->on_net_msg(this, client, head);
 	}
 
-	void start()
-	{
-		if (is_run_)
-			return;
-		is_run_ = true;
-		std::thread t(std::mem_fn(&CellServer::on_run), this);
-		t.detach();
-		task_server_.start();
-	}
+
 
 	
 	void addClient(CellClient* pClient)
@@ -310,7 +311,7 @@ public:
 		});
 	}
 private:
-	void celar_clients()
+	void clear_clients()
 	{
 		for (auto iter : clients_)
 			delete iter.second;
@@ -337,16 +338,13 @@ private:
 
 	// 网络事件
 	INetEvent* net_event_;
-	CellSignal signal_;
 	mutex mutex_;
 	
-
-
 	SOCKET max_socket_;
 	time_t old_time_;
+	CellThread thread_;
 	int id_;
 	bool clients_change_ = true;
-	bool is_run_ = false;	// 是否在工作中
 
 };
 

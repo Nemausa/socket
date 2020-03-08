@@ -47,5 +47,8 @@
     <ClInclude Include="cell_signal.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cell_thread.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

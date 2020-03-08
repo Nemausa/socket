@@ -28,7 +28,8 @@ using namespace std;
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
-using namespace std;
+#include "cell_thread.hpp"
+
 
 #ifndef RECV_BUFF_SIZE
 #define RECV_BUFF_SIZE 10240
