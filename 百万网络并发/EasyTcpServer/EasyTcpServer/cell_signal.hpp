@@ -17,13 +17,13 @@
 
 #include <chrono>
 #include <thread>
+#include <condition_variable>
 
 class CellSignal
 {
 public:
 	CellSignal() 
 	{
-		is_wait_ = false;
 	}
 	~CellSignal() 
 	{
@@ -32,23 +32,32 @@ public:
 
 	void wait()
 	{
-		is_wait_ = true;
-		while (is_wait_)
+		std::unique_lock<std::mutex> ul(mutex_);
+		if(--wait_<0)
 		{
-			std::chrono::milliseconds dura(1);
-			std::this_thread::sleep_for(dura);
+			cv_.wait(ul, [this]()->bool {
+				return wakeup_ > 0;
+			});
+			--wakeup_;
 		}
+			
 	}
 
 	void wakeup()
 	{
-		if (is_wait_)
-			is_wait_ = false;
-		else
-			printf("singal wakeup error.");
+		std::lock_guard<std::mutex> lg(mutex_);
+		if (++wait_<=0)
+		{
+			++wakeup_;
+			cv_.notify_one();
+		}
+
 	}
 private:
-	bool is_wait_;
+	int wait_ = 0;		// 等待计数
+	int wakeup_ = 0;	// 唤醒次数
+	std::mutex mutex_;
+	std::condition_variable cv_;
 };
 
 #endif  // !CELL_SIGNAL_HPP_

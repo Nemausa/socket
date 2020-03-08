@@ -58,11 +58,10 @@ public:
 
 		if (!is_run_)
 			return;
-		
-		task_server_.exit();   // 必须先等待后唤醒，不然造成死锁
+	
 		is_run_ = false;
+		task_server_.exit();   // 必须先等待后唤醒，不然造成死锁
 		signal_.wait();
-
 		printf("CellServer%d.close_socket end\n", id_);
 
 
