@@ -107,14 +107,23 @@ int main()
 	server1.listen_port(5);
 	server1.start(6);
 
-	thread cmd_thread1(cmd);
-	cmd_thread1.detach();
 
-	while (g_run)
+	while (true)
 	{
-		server1.on_run();
+		char buffer[256] = {};
+		scanf("%s", buffer);
+		if (0 == strcmp(buffer, "exit"))
+		{
+			server1.close_socket();
+			cout << "退出线程" << endl;
+			break;;
+		}
+		else
+		{
+			cout << "不支持的命令" << endl;
+		}
 	}
-	server1.close_socket();
+	
 	//CellTaskServer task;
 	//task.start();
 	//Sleep(100);

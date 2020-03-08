@@ -24,7 +24,7 @@ using namespace std;
 #include "cell.hpp"
 #include "cell_client.hpp"
 #include "net_event.hpp"
-#include "cell_thread.hpp"
+
 
 
 // 网络消息接收处理服务类

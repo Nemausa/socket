@@ -16,8 +16,6 @@
 #include <mutex>
 #include <list>
 #include <functional>
-
-#include "cell_signal.hpp"
 #include "cell_thread.hpp"
 
 class CellTaskServer

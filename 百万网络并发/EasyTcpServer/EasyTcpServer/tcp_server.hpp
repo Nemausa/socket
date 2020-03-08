@@ -28,7 +28,6 @@ using namespace std;
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
-#include "cell_thread.hpp"
 
 
 #ifndef RECV_BUFF_SIZE
@@ -44,6 +43,33 @@ using namespace std;
 
 class TcpServer:public INetEvent
 {
+private:
+	void on_run(CellThread* pthread)
+	{
+		while (pthread->is_run())
+		{
+			time_for_msg();
+			fd_set fd_read;
+			FD_ZERO(&fd_read);
+			FD_SET(sock_, &fd_read);
+			timeval t = { 0, 1 };
+			int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
+			if (ret < 0)
+			{
+				thread_.exit();
+				printf("TcpServer.on_run  select task ends \n");
+				close_socket();
+			}
+			if (FD_ISSET(sock_, &fd_read))
+			{
+				FD_CLR(sock_, &fd_read);
+				accpet_client();
+			}
+		} 
+		
+
+		
+	}
 public:
 	TcpServer()
 	{
@@ -188,12 +214,15 @@ public:
 			// 启动服务线程
 			ser->start();
 		}
+
+		thread_.start(nullptr, [this](CellThread* pthread) { on_run(pthread);});
 	}
 
 	// 关闭socket
 	void close_socket()
 	{
 		printf("Tcp_Server.close_socket 1\n");
+		thread_.close();
 		if (INVALID_SOCKET == sock_)
 			return; 
 
@@ -211,37 +240,6 @@ public:
 
 	}
 
-	// 是否在工作中
-	bool is_run()
-	{
-		return INVALID_SOCKET != sock_;
-	}
-
-	bool on_run()
-	{
-		if (!is_run())
-			return false;
-		time_for_msg();
-		fd_set fd_read;
-		FD_ZERO(&fd_read);
-		FD_SET(sock_, &fd_read);
-		timeval t = { 0,10 };
-		int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
-		if (ret < 0)
-		{
-			printf("select task ends");
-			close_socket();
-			return false;
-		}
-		if (FD_ISSET(sock_, &fd_read))
-		{
-			FD_CLR(sock_, &fd_read);
-			accpet_client();
-			return true;
-		}
-
-		return true;
-	}
 
 	// 网络消息计数
 	void time_for_msg()
@@ -289,11 +287,13 @@ public:
 	}
 
 private:
-	SOCKET sock_;
+	char recv_buf_[RECV_BUFF_SIZE];
 	// 消息处理对象，内部会创建线程
 	vector<CellServer*> cell_servers_;
-	char recv_buf_[RECV_BUFF_SIZE];
+	CellThread thread_;
 	CellTimeStamp timer_;
+	SOCKET sock_;
+
 protected:
 	// 受到消息计数
 	atomic_int msg_count_;

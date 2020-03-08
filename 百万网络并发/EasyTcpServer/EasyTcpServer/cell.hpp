@@ -40,6 +40,7 @@
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
+#include "cell_thread.hpp"
 
 
 // 缓冲区大小
