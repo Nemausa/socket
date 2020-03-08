@@ -44,7 +44,7 @@ public:
 			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			NetLoginR ret;
-			//if (0 == client->send_data(&ret))
+			if (0 == client->send_data(&ret))
 			{
 				// 发送缓冲区满了，消息还没有发送出去
 				//printf("<socket=%d> send full \n", client->sockfd());

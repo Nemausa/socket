@@ -29,8 +29,8 @@ enum CMD
 
 struct NetDataHeader
 {
-	short cmd_;
 	short length_;
+	short cmd_;
 
 };
 

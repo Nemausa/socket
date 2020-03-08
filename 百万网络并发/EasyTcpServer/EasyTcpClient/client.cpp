@@ -98,8 +98,8 @@ void send_thread(int id)
 				send_count++;	
 			
 		
-		//std::chrono::milliseconds t(1000);
-		//std::this_thread::sleep_for(t);
+		std::chrono::milliseconds t(1000);
+		std::this_thread::sleep_for(t);
 	}
 
 	for (int n = begin; n < end; n++)

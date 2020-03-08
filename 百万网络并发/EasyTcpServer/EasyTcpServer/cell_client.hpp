@@ -32,8 +32,10 @@ public:
 		sockfd_ = sockfd;
 		last_msg_pos_ = 0;
 		last_send_pos_ = 0;
+
 		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE);
 		memset(sz_send_buf_, 0, SEND_BUFF_SIZE);
+
 		reset_send();
 		reset_heart();
 	}
@@ -156,7 +158,7 @@ public:
 	int server_id = -1;
 
 private:
-	SOCKET sockfd_; // socket fd_set file desc set
+	SOCKET sockfd_;						// socket fd_set file desc set
 	char sz_msg_buf_[RECV_BUFF_SIZE];	// 第二缓冲区 消息缓冲区
 	char sz_send_buf_[SEND_BUFF_SIZE];  // 第二缓冲区 发送缓冲区
 	int last_msg_pos_;					// 消息缓冲区的数据尾部位置

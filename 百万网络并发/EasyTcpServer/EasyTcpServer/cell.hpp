@@ -16,7 +16,7 @@
 */
 
 #ifdef _WIN32
-#define FD_SETSIZE      1024
+#define FD_SETSIZE      256
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <windows.h>
@@ -42,11 +42,11 @@
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
 #include "cell_thread.hpp"
-
+#include <stdio.h>
 
 // 缓冲区大小
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
+#define RECV_BUFF_SIZE 8192
 #define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif
 

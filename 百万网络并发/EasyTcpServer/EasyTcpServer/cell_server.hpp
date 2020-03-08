@@ -94,10 +94,10 @@ public:
 				lock_guard<mutex> lg(mutex_);
 				for (auto client : clients_quene_)
 				{
+					clients_[client->sockfd()] = client;
 					client->server_id = id_;
 					if (net_event_)
 						net_event_->on_join(client);
-					clients_[client->sockfd()] = client;
 				}
 				clients_quene_.clear();
 				clients_change_ = true;
@@ -183,7 +183,6 @@ public:
 				on_client_leave(iter->second);
 				auto iterold = iter++;
 				clients_.erase(iterold);
-				
 				continue;
 			}
 			// 定时发送检测
@@ -228,14 +227,14 @@ public:
 				if (-1 == recv_data(iter->second))
 				{
 					on_client_leave(iter->second);
-					auto iter_old = iter;
-					iter++;
+					auto iter_old = iter++;
 					clients_.erase(iter_old);
 					continue;
 
 				}
-				iter++;
+				
 			}
+			iter++;
 		}
 	
 #endif
@@ -271,14 +270,13 @@ public:
 				if (-1 == iter->second->send_now())
 				{
 					on_client_leave(iter->second);
-					auto iter_old = iter;
-					iter++;
+					auto iter_old = iter++;
 					clients_.erase(iter_old);
 					continue;
 
 				}
-				iter++;
 			}
+			iter++;
 		}
 
 #endif
