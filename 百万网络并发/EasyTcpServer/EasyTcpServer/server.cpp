@@ -45,7 +45,7 @@ public:
 			//client->send_data(&ret);
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 			NetLoginR* ret = new NetLoginR();
-			//cell_server->add_send_task(client, ret);
+			cell_server->add_send_task(client, ret);
 		}
 		break;
 		case CMD_SIGNOUT:
@@ -105,7 +105,7 @@ int main()
 	server1.init_socket();
 	server1.bind_port(nullptr, 4567);
 	server1.listen_port(5);
-	server1.start(6);
+	server1.start(1);
 
 
 	while (true)

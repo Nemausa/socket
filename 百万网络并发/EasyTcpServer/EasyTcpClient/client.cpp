@@ -34,10 +34,14 @@ std::atomic_int read_count = 0;
 
 void recv_thread(int begin, int end)
 {
+	CellTimeStamp t;
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
 		{
+			if(t.get_elapsed_second()>3.0 && n== begin)
+				continue;
+
 			client[n]->on_run();
 		}
 	}
