@@ -45,7 +45,7 @@ public:
 		if (is_wait_)
 			is_wait_ = false;
 		else
-			printf("CELLSemaphore wakeup error.");
+			printf("singal wakeup error.");
 	}
 private:
 	bool is_wait_;

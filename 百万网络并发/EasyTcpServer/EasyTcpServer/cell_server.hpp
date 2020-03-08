@@ -58,8 +58,8 @@ public:
 
 		if (!is_run_)
 			return;
-
-		task_server_.exit();
+		
+		task_server_.exit();   // 必须先等待后唤醒，不然造成死锁
 		is_run_ = false;
 		signal_.wait();
 
