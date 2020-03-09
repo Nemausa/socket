@@ -62,25 +62,7 @@ public:
 		}
 	}
 
-	//static void Info(const char* pstr)
-	//{
-	//	CellLog* plog = &Instance();
-	//	plog->task_server_.add_task([plog, pstr]() {
-	//		if (plog->log_file_)
-	//		{
-	//			auto t = system_clock::now();
-	//			auto tnow = system_clock::to_time_t(t);
-	//			//fprintf(plog->log_file_, "%s", ctime(&now));
-	//			std::tm* now = std::gmtime(&tnow);
-	//			fprintf(plog->log_file_, "[%d-%d-%d %d:%d:%d] ", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
-	//			fprintf(plog->log_file_, "%s", pstr);
-	//			fflush(plog->log_file_);
-	//		}
-	//		printf("%s", pstr);
-	//	});
-	//	
 
-	//}
 	template<typename ... Args>
 	static void Info(const char* format, Args ... args)
 	{

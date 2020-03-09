@@ -39,6 +39,7 @@ using namespace std;
 #include "cell_client.hpp"
 #include "net_event.hpp"
 #include "cell_server.hpp"
+#include "cell_net_work.hpp"
 
 
 class TcpServer:public INetEvent
@@ -86,23 +87,14 @@ public:
 
 	TcpServer(const TcpServer&)
 	{
-
+		
 	}
 	//TcpServer& operator=(const TcpServer&) = delete;
 	// 初始化socket
 	SOCKET init_socket()
 	{
-#ifdef _WIN32
-		// 启动socket 网络环境
-		WORD version = MAKEWORD(2, 2);
-		WSADATA dat;
-		WSAStartup(version, &dat);
-#else
-		/*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-			return 1;*/
-		// 忽略异常情况，默认会导致进程退出
-		signal(SIGPIPE, SIG_IGN);
-#endif
+		CellNetWork::Init();
+
 		if (INVALID_SOCKET != sock_)
 		{
 			cout << "close an existing socket:" << sock_ << endl;
@@ -256,7 +248,7 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+			cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
 			//CellLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
 
