@@ -57,7 +57,7 @@ private:
 			if (ret < 0)
 			{
 				thread_.exit();
-				printf("TcpServer.on_run  select task ends \n");
+				CellLog::Info("TcpServer.on_run  select task ends \n");
 				close_socket();
 			}
 			if (FD_ISSET(sock_, &fd_read))
@@ -75,9 +75,7 @@ public:
 	{
 		sock_ = INVALID_SOCKET;
 		memset(recv_buf_, 0, RECV_BUFF_SIZE);
-		msg_count_ = 0;
-		clients_count_ = 0;
-		recv_count_ = 0;
+
 		
 	}
 	virtual ~TcpServer()
@@ -85,6 +83,12 @@ public:
 		close_socket();
 	}
 
+
+	TcpServer(const TcpServer&)
+	{
+
+	}
+	//TcpServer& operator=(const TcpServer&) = delete;
 	// 初始化socket
 	SOCKET init_socket()
 	{
@@ -139,12 +143,12 @@ public:
 		int bs = ::bind(sock_, (sockaddr*)&_sin, sizeof(_sin));
 		if (SOCKET_ERROR == bs)
 		{
-			printf("error, bind port <%d>error\n", port);
+			CellLog::Info("error, bind port <%d>error\n", port);
 			return false;
 		}
 		else
 		{
-			printf("bind port <%d>success\n", port);
+			CellLog::Info("bind port <%d>success\n", port);
 		}
 		return true;
 	}
@@ -156,11 +160,11 @@ public:
 		int result =listen(sock_, count);
 		if (SOCKET_ERROR == result)
 		{
-			printf("socket=<%d> error, listen error\n", (int)sock_);
+			CellLog::Info("socket=<%d> error, listen error\n", (int)sock_);
 		}
 		else
 		{
-			printf("socket=<%d> listen success\n", (int)sock_);
+			CellLog::Info("socket=<%d> listen success\n", (int)sock_);
 		}
 
 		return result;
@@ -182,7 +186,7 @@ public:
 #endif
 		if (INVALID_SOCKET == csock)
 		{
-			printf("socket=<%d> error, invalid socket\n", (int)sock_);
+			CellLog::Info("socket=<%d> error, invalid socket\n", (int)sock_);
 			return INVALID_SOCKET;
 		}
 		else
@@ -226,7 +230,7 @@ public:
 	// 关闭socket
 	void close_socket()
 	{
-		printf("Tcp_Server.close_socket 1\n");
+		CellLog::Info("Tcp_Server.close_socket 1\n");
 		thread_.close();
 		if (INVALID_SOCKET == sock_)
 			return; 
@@ -241,7 +245,7 @@ public:
 		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
-		printf("Tcp_Server.close_socket 2\n");
+		CellLog::Info("Tcp_Server.close_socket 2\n");
 
 	}
 
@@ -252,9 +256,9 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
-			//printf("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
+			//CellLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
 
 			timer_.update();
 			msg_count_ = 0;
@@ -296,12 +300,12 @@ private:
 	CellTimeStamp timer_;
 	SOCKET sock_;
 
-protected:
+private:
 	// 受到消息计数
-	atomic_int msg_count_;
+	std::atomic_int msg_count_ =0;
 	// 客户端数量
-	atomic_int clients_count_;
-	atomic_int recv_count_; // recv 函数计数
+	std::atomic_int clients_count_=0;
+	std::atomic_int recv_count_=0; // recv 函数计数
 
 };
 

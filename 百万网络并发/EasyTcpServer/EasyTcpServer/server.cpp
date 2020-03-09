@@ -14,12 +14,12 @@ void cmd()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
-			cout << "退出线程" << endl;
+			CellLog::Info("退出线程\n");
 			return;
 		}
 		else
 		{
-			cout << "不支持的命令" << endl;
+			CellLog::Info("不支持的命令\n");
 		}
 	}
 
@@ -41,13 +41,14 @@ public:
 		{
 			client->reset_heart();
 			NetLogin *login = (NetLogin*)head;
-			//printf("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
+			//CellLog::Info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			NetLoginR ret;
 			if (0 == client->send_data(&ret))
 			{
 				//发送缓冲区满了，消息还没有发送出去
-				//printf("<socket=%d> send full \n", client->sockfd());
+				CellLog::Info("<socket=%d> send full \n", client->sockfd());
+				//CellLog::Info("<socket=%d> send full \n", client->sockfd());
 			}
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 			/*NetLoginR* ret = new NetLoginR();
@@ -57,7 +58,7 @@ public:
 		case CMD_SIGNOUT:
 		{
 
-			//printf("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
+			//CellLog::Info("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
 			// 判断用户密码正确的过程
 			//SignOutResult ret = {};
 			//send_data(csock, &ret);
@@ -73,7 +74,7 @@ public:
 		default:
 			NetDataHeader ret = {};
 			//send_data(csock, &ret);
-			printf("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
+			CellLog::Info("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
 			break;
 		}
 	}
@@ -106,6 +107,7 @@ private:
 
 int main()
 {
+	CellLog::Instance().set_path("log.txt", "w");
 	MyServer server1;
 	server1.init_socket();
 	server1.bind_port(nullptr, 4567);
@@ -120,12 +122,12 @@ int main()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			server1.close_socket();
-			cout << "退出线程" << endl;
+			CellLog::Info("退出线程\n");
 			break;;
 		}
 		else
 		{
-			cout << "不支持的命令" << endl;
+			CellLog::Info("不支持的命令\n");
 		}
 	}
 	
@@ -134,12 +136,12 @@ int main()
 	//Sleep(100);
 	//task.exit();
 
-	while (true)
-	{
-		std::chrono::microseconds dura(1);
-		std::this_thread::sleep_for(dura);
-	}
-	printf("已退出\n");
+	//while (true)
+	//{
+	//	std::chrono::microseconds dura(1);
+	//	std::this_thread::sleep_for(dura);
+	//}
+	CellLog::Info("已退出\n");
 	return 0;
 }
 

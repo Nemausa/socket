@@ -36,7 +36,7 @@ public:
 	}
 	virtual ~CellClient()
 	{
-		printf("server=%d, CellClient%d.~CellClient\n", server_id,id);
+		CellLog::Info("server=%d, CellClient%d.~CellClient\n", server_id,id);
 		if (INVALID_SOCKET == sockfd_)
 			return;
 
@@ -101,7 +101,7 @@ public:
 		dt_heart_ += dt;
 		if (dt_heart_ >= CLIENT_HEART_DEAD_TIME)
 		{
-			//printf("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
+			//CellLog::Info("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
 			return true;
 		}
 		return false;
@@ -118,7 +118,7 @@ public:
 		dt_send_ += dt;
 		if (dt_send_ >= CLIENT_SEND_TIME)
 		{
-			//printf("check send:socket=%d, time=%d\n", sockfd_, dt_send_);
+			//CellLog::Info("check send:socket=%d, time=%d\n", sockfd_, dt_send_);
 			// 立即发送缓冲区的数据
 			send_now();
 			reset_send();

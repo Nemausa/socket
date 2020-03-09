@@ -53,5 +53,8 @@
     <ClInclude Include="cell_buffer.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cell_log.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

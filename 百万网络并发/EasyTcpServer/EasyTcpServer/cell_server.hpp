@@ -41,9 +41,9 @@ public:
 	}
 	virtual ~CellServer()
 	{
-		printf("CellServer%d.~CellServer exit begin \n", id_);
+		CellLog::Info("CellServer%d.~CellServer exit begin \n", id_);
 		exit();
-		printf("CellServer%d.~CellServer exit end \n", id_);
+		CellLog::Info("CellServer%d.~CellServer exit end \n", id_);
 
 	}
 
@@ -67,12 +67,12 @@ public:
 	// 关闭socket
 	void exit()
 	{
-		printf("CellServer%d.close_socket begin\n", id_);
+		CellLog::Info("CellServer%d.close_socket begin\n", id_);
 		
-		task_server_.exit();
+		task_server_.close();
 		thread_.close();
 
-		printf("CellServer%d.close_socket end\n", id_);
+		CellLog::Info("CellServer%d.close_socket end\n", id_);
 
 
 	}
@@ -149,7 +149,7 @@ public:
 			int ret = select((int)max_socket_ + 1, &fd_read, &fd_write, nullptr, &t);
 			if (ret < 0)
 			{
-				printf("CellServer%d.on_run.select error \n", id_);
+				CellLog::Info("CellServer%d.on_run.select error \n", id_);
 				pthread->exit();
 				break;
 			}
@@ -162,9 +162,9 @@ public:
 			write_data(fd_write);
 			//write_data(fd_except);
 			check_time();
-			//printf("CellServer%d.on_run.select: fd_read=%d, fd_write=%d \n", id_, fd_read.fd_count, fd_write.fd_count);
+			//CellLog::Info("CellServer%d.on_run.select: fd_read=%d, fd_write=%d \n", id_, fd_read.fd_count, fd_write.fd_count);
 		}
-		printf("CellServer%d.on_run\n", id_);
+		CellLog::Info("CellServer%d.on_run\n", id_);
 		
 	}
 

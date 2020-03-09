@@ -39,6 +39,19 @@ public:
 
 	bool push(const char* pdata, int length)
 	{
+		//if (last_ + length > size_)
+		//{
+		//	// 写入大量数据不一定要放到内存中
+		//	// 也可以存储到数据库或者磁盘
+		//	// 需要写入的数据大于可用空间
+		//	int n = last_ + length - size_;
+		//	if (n < 8192)
+		//		n = 8192;
+		//	char* buff = new char[size_ + n];
+		//	memcpy(buff, buffer_, last_);
+		//	delete[] buffer_;
+		//	buffer_ = buff;
+		//}
 		if (last_ + length <= size_)
 		{
 			// 将要发送的数据拷贝到发送缓冲区尾部
@@ -111,6 +124,8 @@ public:
 	
 
 private:
+	// 可以用链表和队列管理缓存
+	//list<char*> list_buffer_;
 	char* buffer_;  
 	int last_;		// 缓冲区尾部位置
 	int size_;		// 缓冲区字节长度

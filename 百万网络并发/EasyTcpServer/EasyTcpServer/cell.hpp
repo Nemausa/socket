@@ -42,6 +42,7 @@
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
 #include "cell_thread.hpp"
+#include "cell_log.hpp"
 #include <stdio.h>
 
 // 缓冲区大小

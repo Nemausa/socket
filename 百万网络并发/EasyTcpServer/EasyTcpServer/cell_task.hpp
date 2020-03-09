@@ -18,6 +18,7 @@
 #include <functional>
 #include "cell_thread.hpp"
 
+
 class CellTaskServer
 {
 	typedef std::function<void()> CellTask;
@@ -36,11 +37,11 @@ public:
 		}, nullptr);
 	}
 
-	void exit()
+	void close()
 	{
-		printf("CellTaskServer%d.close begin\n", server_id_);
+		//CellLog::Info("CellTaskServer%d.close begin\n", server_id_);
 		thread_.close();
-		printf("CellTaskServer%d.close end\n", server_id_);
+		//CellLog::Info("CellTaskServer%d.close end\n", server_id_);
 		
 	}
 
@@ -71,8 +72,13 @@ public:
 
 			task_list_.clear();
 
+			
 		}	
-		printf("CellTaskServer%d.on_run exit\n", server_id_);
+
+		// 处理缓存队列中的任务
+		for (auto task : task_buf_)
+			task();
+		//CellLog::Info("CellTaskServer%d.on_run exit\n", server_id_);
 		
 	}
 public:
