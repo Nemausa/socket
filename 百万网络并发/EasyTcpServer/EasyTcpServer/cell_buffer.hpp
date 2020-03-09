@@ -24,7 +24,7 @@ public:
 		size_ = size;
 		buffer_ = new char[size_];
 		last_ = 0;
-		buffer_full_count_ = 0;
+		full_count_ = 0;
 	}
 	~CellBuffer() 
 	{
@@ -32,18 +32,9 @@ public:
 			delete[] buffer_;
 	}
 
-	// 立即将缓冲区数据发送出去
-	int write_socket(SOCKET sockfd)
+	char* data()
 	{
-		int ret = 0;
-		if (last_ > 0)
-		{
-			ret = send(sockfd, buffer_, last_, 0);
-			last_ = 0;
-			buffer_full_count_ = 0;
-		}
-		return ret;
-
+		return buffer_;
 	}
 
 	bool push(const char* pdata, int length)
@@ -55,21 +46,75 @@ public:
 			// 数据尾部位置
 			last_ += length;
 			if (last_ == size_)
-				buffer_full_count_++;
+				full_count_++;
 			return true;
 		}
 		else
 		{
-			buffer_full_count_++;
+			full_count_++;
 		}
 		return false;
 	}
+
+	void pop(int length)
+	{
+		int n = last_ - length;
+		if (n > 0)
+		{
+			memcpy(buffer_, buffer_ + length, n);
+		}
+		last_ = n;
+		if (full_count_ > 0)
+			--full_count_;
+
+	}
+
+
+	int write_socket(SOCKET sockfd)
+	{
+		int ret = 0;
+		if (last_ > 0)
+		{
+			ret = send(sockfd, buffer_, last_, 0);
+			last_ = 0;
+			full_count_ = 0;
+		}
+		return ret;
+	}
+
+	int read_socket(SOCKET sockfd)
+	{
+		
+		if (size_ - last_ < 0)
+			return 0;
+		char *recv_buf = buffer_ + last_;
+		int len = (int)recv(sockfd, recv_buf, size_ - last_, 0);
+		if (len <= 0)
+		{
+			return len;
+		}
+		last_ += len;
+		return  len;
+	}
+
+	bool has_msg()
+	{
+		if (last_ >= sizeof(NetDataHeader))
+		{
+			// 这时候就知道了当前消息的长度
+			NetDataHeader *head = (NetDataHeader*)buffer_;
+			// 判断消息缓冲区的数据长度大于消息长度
+			return (last_ >= head->length_);
+		}
+		return false;
+	}
+	
 
 private:
 	char* buffer_;  
 	int last_;		// 缓冲区尾部位置
 	int size_;		// 缓冲区字节长度
-	int buffer_full_count_;
+	int full_count_;
 };
 
 

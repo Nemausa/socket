@@ -26,15 +26,11 @@
 class CellClient
 {
 public:
-	CellClient(SOCKET sockfd = INVALID_SOCKET):send_buf_(SEND_BUFF_SIZE)
+	CellClient(SOCKET sockfd = INVALID_SOCKET):send_buf_(SEND_BUFF_SIZE),recv_buf_(RECV_BUFF_SIZE)
 	{
 		static int n = 1;
 		id = n++;
 		sockfd_ = sockfd;
-		last_msg_pos_ = 0;
-
-		memset(sz_msg_buf_, 0, RECV_BUFF_SIZE);
-
 		reset_send();
 		reset_heart();
 	}
@@ -56,19 +52,25 @@ public:
 		return sockfd_;
 	}
 
-	char *msg_buf()
+	int recv_data()
 	{
-		return sz_msg_buf_;
+		return recv_buf_.read_socket(sockfd_);
 	}
 
-	int get_last_pos()
+	bool has_msg()
 	{
-		return last_msg_pos_;
+		return recv_buf_.has_msg();
 	}
 
-	void set_last_pos(int pos)
+	NetDataHeader* front_msg()
 	{
-		last_msg_pos_ = pos;
+		return (NetDataHeader*)recv_buf_.data();
+	}
+
+	void pop()
+	{
+		if(has_msg())
+			recv_buf_.pop(front_msg()->length_);
 	}
 
 	// 立即将缓冲区数据发送出去
@@ -131,9 +133,8 @@ public:
 
 private:
 	SOCKET sockfd_;						// socket fd_set file desc set
-	char sz_msg_buf_[RECV_BUFF_SIZE];	// 第二缓冲区 消息缓冲区
 	CellBuffer send_buf_;				// 发送缓冲区
-	int last_msg_pos_;					// 消息缓冲区的数据尾部位置
+	CellBuffer recv_buf_;				// 接受缓冲区
 	int send_buf_count_ = 0;			// 缓冲区写满的次数
 	time_t dt_heart_;					// 心跳死亡计时
 	time_t dt_send_;					// 上次发送消息的时间

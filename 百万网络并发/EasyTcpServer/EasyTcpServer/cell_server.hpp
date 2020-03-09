@@ -18,6 +18,7 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <map>
 #include <iostream>
 using namespace std;
 
@@ -34,7 +35,7 @@ public:
 	CellServer(int id)
 	{
 		id_ = id;
-		net_event_ = nullptr;
+		pevent_ = nullptr;
 		old_time_ = CellTime::get_time_millisecond();
 		task_server_.server_id_ = id;
 	}
@@ -48,7 +49,7 @@ public:
 
 	void set_event(INetEvent* net_event)
 	{
-		net_event_ = net_event;
+		pevent_ = net_event;
 	}
 
 	void start()
@@ -96,8 +97,8 @@ public:
 				{
 					clients_[client->sockfd()] = client;
 					client->server_id = id_;
-					if (net_event_)
-						net_event_->on_join(client);
+					if (pevent_)
+						pevent_->on_join(client);
 				}
 				clients_quene_.clear();
 				clients_change_ = true;
@@ -194,8 +195,8 @@ public:
 
 	void on_client_leave(CellClient* pclient)
 	{
-		if (net_event_)
-			net_event_->on_leave(pclient);
+		if (pevent_)
+			pevent_->on_leave(pclient);
 		delete pclient;
 		clients_change_ = true;
 
@@ -279,43 +280,20 @@ public:
 	// 接受数据 处理粘包 拆分包
 	int recv_data(CellClient *client)
 	{
-		int len_head = sizeof(NetDataHeader);
-		// 接受客户端的请求
-		char *recv_buf = client->msg_buf() + client->get_last_pos();
-		int len = (int)recv(client->sockfd(), recv_buf, RECV_BUFF_SIZE - client->get_last_pos(), 0);
-		net_event_->on_recv(client);
-
+		int len = client->recv_data();
 		if (len <= 0)
 		{
-			//cout << "client:" << (int)client->sockfd() << "exited" << endl;
 			return -1;
 		}
-
-		// 将收取的数据拷贝到消息缓冲区
-		//memcpy(client->msg_buf() + client->get_last_pos(), recv_buf_, len);
-		client->set_last_pos(client->get_last_pos() + len);
-		while (client->get_last_pos() >= sizeof(NetDataHeader))
+		// 触发<接收网络数据>事件
+		pevent_->on_recv(client);
+		// 循环 判断是否有消息需要处理
+		while (client->has_msg())
 		{
-			// 这时候就知道了当前消息的长度
-			NetDataHeader *head = (NetDataHeader*)client->msg_buf();
-			// 判断消息缓冲区的数据长度大于消息长度
-			if (client->get_last_pos() >= head->length_)
-			{
-				// 消息缓冲区剩余未处理的数据
-				int size = client->get_last_pos() - head->length_;
-				// 处理网络消息
-				net_msg(client, head);
-				// 将消息缓冲区剩余未处理的数据迁移
-				memcpy(client->msg_buf(), client->msg_buf() + head->length_, size);
-				// 消息缓冲区的尾部位置前移
-				client->set_last_pos(size);
-
-			}
-			else
-			{
-				// 消息缓冲区剩余的数据不够一条消息
-				break;
-			}
+			// 处理网络消息
+			net_msg(client, client->front_msg());
+			// 移除消息队列最前面的一条数据
+			client->pop();	
 		}
 
 		return 0;
@@ -323,11 +301,8 @@ public:
 
 	virtual void net_msg(CellClient* client, NetDataHeader *head)
 	{
-		net_event_->on_net_msg(this, client, head);
+		pevent_->on_net_msg(this, client, head);
 	}
-
-
-
 	
 	void addClient(CellClient* pClient)
 	{
@@ -375,7 +350,7 @@ private:
 	CellTaskServer task_server_;
 
 	// 网络事件
-	INetEvent* net_event_;
+	INetEvent* pevent_;
 	mutex mutex_;
 	
 	SOCKET max_socket_;
