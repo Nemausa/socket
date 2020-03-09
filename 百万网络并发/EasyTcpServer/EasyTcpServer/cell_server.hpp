@@ -165,7 +165,6 @@ public:
 		}
 		printf("CellServer%d.on_run\n", id_);
 		
-		
 	}
 
 
@@ -212,8 +211,7 @@ public:
 				if (-1 == recv_data(iter->second))
 				{
 					on_client_leave(iter->second);
-					clients_.erase(iter);
-					
+					clients_.erase(iter);	
 				}
 			}
 
@@ -230,9 +228,7 @@ public:
 					auto iter_old = iter++;
 					clients_.erase(iter_old);
 					continue;
-
 				}
-				
 			}
 			iter++;
 		}
@@ -254,7 +250,6 @@ public:
 
 					on_client_leave(iter->second);
 					clients_.erase(iter);
-				
 				}
 			}
 
@@ -273,7 +268,6 @@ public:
 					auto iter_old = iter++;
 					clients_.erase(iter_old);
 					continue;
-
 				}
 			}
 			iter++;

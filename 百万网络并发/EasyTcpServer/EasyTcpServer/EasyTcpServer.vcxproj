@@ -163,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cell.hpp" />
+    <ClInclude Include="cell_buffer.hpp" />
     <ClInclude Include="cell_client.hpp" />
     <ClInclude Include="cell_server.hpp" />
     <ClInclude Include="cell_signal.hpp" />

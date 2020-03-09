@@ -46,7 +46,7 @@ public:
 			NetLoginR ret;
 			if (0 == client->send_data(&ret))
 			{
-				// 发送缓冲区满了，消息还没有发送出去
+				//发送缓冲区满了，消息还没有发送出去
 				//printf("<socket=%d> send full \n", client->sockfd());
 			}
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
@@ -110,7 +110,7 @@ int main()
 	server1.init_socket();
 	server1.bind_port(nullptr, 4567);
 	server1.listen_port(5);
-	server1.start(1);
+	server1.start(6);
 
 
 	while (true)

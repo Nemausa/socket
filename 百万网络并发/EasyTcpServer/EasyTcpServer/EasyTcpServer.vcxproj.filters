@@ -50,5 +50,8 @@
     <ClInclude Include="cell_thread.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="cell_buffer.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

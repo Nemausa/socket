@@ -16,7 +16,7 @@
 */
 
 #ifdef _WIN32
-#define FD_SETSIZE      256
+#define FD_SETSIZE      1024
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <windows.h>
@@ -46,7 +46,7 @@
 
 // 缓冲区大小
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 8192
+#define RECV_BUFF_SIZE 10240
 #define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif
 

@@ -27,7 +27,7 @@ void cmd()
 }
 
 const int t_count = 1;    // 线程数量
-const int c_count = 10; // 客户端数量
+const int c_count = 1; // 客户端数量
 TcpClient *client[c_count];
 std::atomic_int send_count;
 std::atomic_int read_count;
@@ -39,8 +39,8 @@ void recv_thread(int begin, int end)
 	{
 		for (int n = begin; n < end; n++)
 		{
-			/*if(t.get_elapsed_second()>3.0 && n== begin)
-				continue;*/
+			if(t.get_elapsed_second()>3.0 && n== begin)
+				continue;
 
 			client[n]->on_run();
 		}
@@ -67,7 +67,7 @@ void send_thread(int id)
 	for (int n = begin; n < end; n++)
 	{
 		client[n]->init_socket();
-		client[n]->connect_server(ip_linux, 4567);
+		client[n]->connect_server(ip_local, 4567);
 		
 	}
 	printf("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
@@ -98,7 +98,7 @@ void send_thread(int id)
 				send_count++;	
 			
 		
-		std::chrono::milliseconds t(1000);
+		std::chrono::milliseconds t(5000);
 		std::this_thread::sleep_for(t);
 	}
 
