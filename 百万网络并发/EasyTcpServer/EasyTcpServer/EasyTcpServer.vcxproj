@@ -101,6 +101,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Git\C++\socket\百万网络并发\EasyTcpServer\depends\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -115,6 +116,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Git\C++\socket\百万网络并发\EasyTcpServer\depends\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +133,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Git\C++\socket\百万网络并发\EasyTcpServer\depends\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +152,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Git\C++\socket\百万网络并发\EasyTcpServer\depends\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,22 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cell_time_stamp.hpp" />
     <ClCompile Include="server.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="cell.hpp" />
-    <ClInclude Include="cell_log.hpp" />
-    <ClInclude Include="cell_buffer.hpp" />
-    <ClInclude Include="cell_client.hpp" />
-    <ClInclude Include="cell_net_work.hpp" />
-    <ClInclude Include="cell_server.hpp" />
-    <ClInclude Include="cell_signal.hpp" />
-    <ClInclude Include="cell_task.hpp" />
-    <ClInclude Include="cell_thread.hpp" />
-    <ClInclude Include="message.hpp" />
-    <ClInclude Include="net_event.hpp" />
-    <ClInclude Include="tcp_server.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
