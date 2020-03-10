@@ -18,6 +18,12 @@
 
 class CellThread
 {
+public:
+	static void sleep(time_t t)
+	{
+		std::chrono::microseconds dura(t);
+		std::this_thread::sleep_for(dura);
+	}
 private:
 	typedef std::function<void(CellThread*)> EventCall;
 
