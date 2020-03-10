@@ -114,11 +114,11 @@ int main()
 	server1.listen_port(5);
 	server1.start(6);
 
-	MyServer server2;
-	server2.init_socket();
-	server2.bind_port(nullptr, 4568);
-	server2.listen_port(5);
-	server2.start(6);
+	//MyServer server2;
+	//server2.init_socket();
+	//server2.bind_port(nullptr, 4568);
+	//server2.listen_port(5);
+	//server2.start(6);
 
 
 

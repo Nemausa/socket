@@ -122,6 +122,10 @@ public:
 		return false;
 	}
 	
+	bool need_write()
+	{
+		return last_;
+	}
 
 private:
 	// 可以用链表和队列管理缓存

@@ -1,0 +1,9 @@
+[2020-3-10 12:23:38] CellLog::set_path success<client_log.txt,w>
+[2020-3-10 12:23:38] <socket<224> close old socket...
+[2020-3-10 12:23:38] server=-1, CellClient1.~CellClient
+[2020-3-10 12:23:39] thread<1>,clients<1>,time<1.000001>,send_count<0>
+[2020-3-10 12:23:40] thread<1>,clients<1>,time<1.000001>,send_count<0>
+[2020-3-10 12:23:40] socket=224, ip=127.0.0.1, port=4567[2020-3-10 12:23:40] thread<1>,connect<beging=0,end=1>
+[2020-3-10 12:23:41] thread<1>,clients<1>,time<1.000001>,send_count<101>
+[2020-3-10 12:23:41] server=-1, CellClient2.~CellClient
+[2020-3-10 12:23:41] exit thread[2020-3-10 12:23:41] thread<1>,exit<beging=0,end=1>

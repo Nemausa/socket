@@ -1,11 +1,59 @@
 ﻿#include <thread>
 #include <atomic>
 #include "tcp_client.hpp"
+#include "cell.hpp"
+#include "cell_log.hpp"
 #include <iostream>
 using namespace std;
 #define  _CRT_SECURE_NO_WARNINGS
 
 bool g_run = true;
+
+
+
+class MyClient:public TcpClient
+{
+public:
+	// 响应网络消息
+	virtual void on_net_msg(NetDataHeader *head)
+	{
+		// 处理请求
+		switch (head->cmd_)
+		{
+		case CMD_LOGIN_RESULT:
+		{
+			NetLoginR *login = (NetLoginR*)head;
+			//cout << "socket=" << sock_ << "command:CMD_LOGIN_RESULT" << "data length:" << login->length_ << endl;
+		}
+		break;
+		case CMD_SIGNOUT_RESULT:
+		{
+			NetLoginR *loginout = (NetLoginR*)head;
+			//cout << "socket=" << sock_ << "command:CMD_SIGNOUT_RESULT" << "data length:" << loginout->length_ << endl;
+		}
+		break;
+		case  CMD_NEW_USER_JOIN:
+		{
+			NetNewUserJoin *user = (NetNewUserJoin*)head;
+			//cout << "socket=" << sock_ << "command:CMD_NEW_USER_JOIN" << "data length:" << user->length_ << endl;
+		}
+		break;
+		case  CMD_ERROR:
+		{
+			CellLog::Info("socket=<%d> receive error, data length=<%d>\n", (int)pclient_->sockfd(), head->length_);
+		}
+		break;
+		default:
+			CellLog::Info("socket=<%d> receive unknown message", (int)pclient_->sockfd());
+			break;
+		}
+	}
+
+private:
+
+};
+
+
 
 void cmd()
 {
@@ -16,19 +64,19 @@ void cmd()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
-			cout << "退出线程" << endl;
+			CellLog::Info("exit thread");
 			return;
 		}
 		else
 		{
-			cout << "不支持的命令" << endl;
+			CellLog::Info("不支持的命令");
 		}
 	}
 	
 }
 
-const int t_count = 5;    // 线程数量
-const int c_count = 1000; // 客户端数量
+const int t_count = 1;    // 线程数量
+const int c_count = 1; // 客户端数量
 TcpClient *client[c_count];
 std::atomic_int send_count;
 std::atomic_int read_count;
@@ -63,7 +111,7 @@ void send_thread(int id)
 
 	for (int n = begin; n < end; n++)
 	{
-		client[n] = new TcpClient();
+		client[n] = new MyClient();
 	}
 	for (int n = begin; n < end; n++)
 	{
@@ -71,7 +119,7 @@ void send_thread(int id)
 		client[n]->connect_server(ip_local, 4567);
 		
 	}
-	printf("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::Info("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
 	
 	read_count++;
 	while (read_count < t_count)
@@ -95,7 +143,7 @@ void send_thread(int id)
 	while (g_run)
 	{
 		for (int n = begin; n < end; n++)
-			if (SOCKET_ERROR != client[n]->send_data(login, len))
+			if (SOCKET_ERROR != client[n]->send_data(login))
 				send_count++;	
 			
 	}
@@ -105,7 +153,7 @@ void send_thread(int id)
 		client[n]->close_socket();
 		delete client[n];
 	}
-	printf("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::Info("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
 }
 
 
@@ -113,6 +161,7 @@ void send_thread(int id)
 int main()
 {
 	
+	CellLog::Instance().set_path("client_log.txt", "w");
 
 	// UI线程
 	thread cmd_thread(cmd);
@@ -132,7 +181,7 @@ int main()
 		auto t = timer.get_elapsed_second();
 		if (t > 1.0)
 		{
-			printf("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
+			CellLog::Info("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
 			send_count = 0;
 			timer.update();
 		}

@@ -73,6 +73,11 @@ public:
 			recv_buf_.pop(front_msg()->length_);
 	}
 
+	bool need_write()
+	{
+		return send_buf_.need_write();
+	}
+
 	// 立即将缓冲区数据发送出去
 	int send_now()
 	{
@@ -84,7 +89,6 @@ public:
 	// 发送数据给指定的客户端
 	int send_data(NetDataHeader *head)
 	{
-		const char* pSendData = (const char*)head;
 		if (send_buf_.push((const char*)head, head->length_))
 			return head->length_;
 		
