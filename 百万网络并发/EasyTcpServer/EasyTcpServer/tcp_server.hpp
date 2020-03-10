@@ -76,7 +76,9 @@ public:
 	{
 		sock_ = INVALID_SOCKET;
 		memset(recv_buf_, 0, RECV_BUFF_SIZE);
-
+		msg_count_ = 0;
+		clients_count_ = 0;
+		recv_count_ = 0;
 		
 	}
 	virtual ~TcpServer()
@@ -294,10 +296,10 @@ private:
 
 private:
 	// 受到消息计数
-	std::atomic_int msg_count_ =0;
+	std::atomic_int msg_count_ ;
 	// 客户端数量
-	std::atomic_int clients_count_=0;
-	std::atomic_int recv_count_=0; // recv 函数计数
+	std::atomic_int clients_count_;
+	std::atomic_int recv_count_; // recv 函数计数
 
 };
 
