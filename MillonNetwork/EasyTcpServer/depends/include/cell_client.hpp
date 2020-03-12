@@ -89,9 +89,14 @@ public:
 	// 发送数据给指定的客户端
 	int send_data(NetDataHeader *head)
 	{
-		if (send_buf_.push((const char*)head, head->length_))
-			return head->length_;
-		
+		return send_data((const char*)head, head->length_);
+	}
+
+	int send_data(const char* head, int len)
+	{
+		if (send_buf_.push(head, len))
+			return len;
+
 		return SOCKET_ERROR;
 	}
 

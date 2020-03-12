@@ -33,7 +33,7 @@ public:
 		buffer_ = new char[size_];
 		b_delete_ = true;
 	}
-	~CellStream()
+	virtual ~CellStream()
 	{
 		if (b_delete_ && buffer_)
 		{
@@ -70,6 +70,18 @@ public:
 	{
 		writepos_ = n;
 	}
+
+	char* data()
+	{
+		return buffer_;
+	}
+
+	int length()
+	{
+		return writepos_;
+	}
+
+
 
 	template<typename T>
 	bool read(T& n, bool offset=true)
@@ -237,11 +249,28 @@ public:
 	{
 		return write(n);
 	}
+	
+	bool write_string(const std::string str)
+	{
+		return write_array(str.c_str(), str.length());
+	}
+
+	bool write_string(const char* str)
+	{
+		return write_array(str, strlen(str));
+	}
+
+	bool write_string(const char* str, int len)
+	{
+		return write_array(str, len);
+	}
+
+
 private:
 	
 	char* buffer_ = nullptr;	// 数据缓冲区
 	int size_;					// 总字节长度
-	int writepos_=0;	            // 已写入数据的大小
+	int writepos_=0;	        // 已写入数据的大小
 	int readpos_=0;				// 已读取数据的大小
 	bool b_delete_;				// 是否需要删除
 };

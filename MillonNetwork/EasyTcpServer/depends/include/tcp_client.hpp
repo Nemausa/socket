@@ -51,7 +51,7 @@ public:
 	// 连接服务器
 	int connect_server(const char* ip, unsigned short port)
 	{
-		if (pclient_)
+		if (!pclient_)
 		{
 			init_socket();
 		}
@@ -172,6 +172,11 @@ public:
 	int send_data(NetDataHeader *head)
 	{
 		return pclient_->send_data(head);	
+	}
+
+	int send_data(const char* pdata, int len)
+	{
+		return pclient_->send_data(pdata, len);
 	}
 
 protected:

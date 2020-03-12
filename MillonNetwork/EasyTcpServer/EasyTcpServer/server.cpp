@@ -1,8 +1,9 @@
 ﻿#include <iostream>
 #include <vector>
+#include <thread>
 using namespace std;
 #include "tcp_server.hpp"
-#include <thread>
+#include "cell_msg_stream.hpp"
 
 bool g_run = true;
 void cmd()
@@ -57,11 +58,39 @@ public:
 		break;
 		case CMD_SIGNOUT:
 		{
+			CellReadStream r(head);
+			// 预读取长度
+			r.read_int16();
+			r.get_cmd();
+			auto n1 = r.read_int8();
+			auto n2 = r.read_int16();
+			auto n3 = r.read_int32();
+			auto n4 = r.read_float();
+			auto n5 = r.read_double();
+			char name[32] = {};
+			auto n6 = r.read_array(name, 32);
+			char pw[32] = {};
+			auto n7 = r.read_array(pw, 32);
+			int ata[10] = {};
+			auto n8 = r.read_array(ata, 10);
 
-			//CellLog::Info("command CMD_SIGNOUT socket=<%d> data length=<%d> username=<%s>\n", (int)csock, head->length_, loginout->username_);
-			// 判断用户密码正确的过程
-			//SignOutResult ret = {};
-			//send_data(csock, &ret);
+			CellWriteStream s(128);
+			s.set_cmd(CMD_SIGNOUT_RESULT);
+			s.write_int8(5);
+			s.write_int16(4);
+			s.write_int32(3);
+			s.write_float(2.0f);
+			s.write_double(1.6);
+
+			char* str = "server";
+			s.write_array(str, strlen(str));
+			char a[] = "passwd";
+			s.write_array(a, strlen(a));
+			int b[] = { 1,2,3,4,5 };
+			s.write_array(b, 5);
+			s.finish();
+			client->send_data(s.data(), s.length());
+			
 		}
 		break;
 		case CMD_HEART_C2S:
