@@ -1,3 +1,0 @@
-[2020-3-11 16:47:51] CellLog::set_path success<log.txt,w>
-[2020-3-11 16:47:51] bind port <4567>success
-[2020-3-11 16:47:51] socket=<276> listen success
