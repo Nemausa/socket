@@ -112,10 +112,10 @@ public:
 				continue;
 			}
 
+			check_time();
 
 			fd_set fd_read;
 			fd_set fd_write;
-			//fd_set fd_except;
 			
 			max_socket_ = clients_.begin()->second->sockfd();
 			if (clients_change_)
@@ -138,7 +138,21 @@ public:
 				memcpy(&fd_read, &fd_read_back_, sizeof(fd_set));
 			}
 
-			memcpy(&fd_write, &fd_read_back_, sizeof(fd_set));
+
+			bool need_write = false;
+			FD_ZERO(&fd_write);
+			for (auto iter:clients_)
+			{
+				// 检测需要写的客户端
+				if (iter.second->need_write())
+				{
+					need_write = true;
+					FD_SET(iter.second->sockfd(), &fd_write);
+				}
+
+			}
+
+			//memcpy(&fd_write, &fd_read_back_, sizeof(fd_set));
 			//memcpy(&fd_except, &fd_read_back_, sizeof(fd_set));
 
 
@@ -146,22 +160,26 @@ public:
 			// nfds 是一个整数值，是指fd_set集合所有的描述符(socket)的范围，而不是数量
 			// 既是所有文件描述符最大值+1，在windows中这个参数可以写0
 			timeval t = { 0, 1};
-			int ret = select((int)max_socket_ + 1, &fd_read, &fd_write, nullptr, &t);
+			int ret;
+			if(need_write)
+				ret = select((int)max_socket_ + 1, &fd_read, &fd_write, nullptr, &t);
+			else
+				ret = select((int)max_socket_ + 1, &fd_read, nullptr, nullptr, &t);
+
 			if (ret < 0)
 			{
 				CellLog::Info("CellServer%d.on_run.select error \n", id_);
 				pthread->exit();
 				break;
 			}
-			/*else if (ret == 0)
+			else if (ret == 0)
 			{
 				continue;
-			}*/
+			}
 
 			read_data(fd_read);
 			write_data(fd_write);
 			//write_data(fd_except);
-			check_time();
 			//CellLog::Info("CellServer%d.on_run.select: fd_read=%d, fd_write=%d \n", id_, fd_read.fd_count, fd_write.fd_count);
 		}
 		CellLog::Info("CellServer%d.on_run\n", id_);
@@ -261,7 +279,7 @@ public:
 
 		for (auto iter = clients_.begin(); iter != clients_.end();)
 		{
-			if (FD_ISSET(iter->second->sockfd(), &fd_write))
+			if (iter->second->need_write() &&FD_ISSET(iter->second->sockfd(), &fd_write))
 			{
 				if (-1 == iter->second->send_now())
 				{

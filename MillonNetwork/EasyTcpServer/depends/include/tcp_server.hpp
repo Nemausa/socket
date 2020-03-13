@@ -250,9 +250,10 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
+			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
-			//CellLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", (int)cell_servers_.size(), t, (int)sock_, clients_count_, msg_count_, recv_count_);
+			CellLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", 
+				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
 
 			timer_.update();
 			msg_count_ = 0;
@@ -294,7 +295,7 @@ private:
 	CellTimeStamp timer_;
 	SOCKET sock_;
 
-private:
+protected:
 	// 受到消息计数
 	std::atomic_int msg_count_ ;
 	// 客户端数量
