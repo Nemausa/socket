@@ -130,23 +130,53 @@ private:
 
 };
 
-
-
-int main()
+const char* arg_to_str(int argc, char* args[], int index, const char* def, const char* name)
 {
+	if (index >= argc)
+	{
+		CellLog::error("argtostr, index=%d, argc=%d, name=%s", index, argc, name);
+	}
+	else
+	{
+		def = args[index];
+	}
+	CellLog::info("%s=%s", name, def);
+	return def;
+}
+
+int arg_to_int(int argc, char* args[], int index, int def, const char* name)
+{
+	if (index >= argc)
+	{
+		CellLog::error("arg_to_int, index=%d, argc=%d, name=%s", index, argc, name);
+	}
+	else
+	{
+		def = atoi(args[index]);
+	}
+	CellLog::info("%s=%d", name, def);
+	return def;
+}
+
+
+int main(int argc, char* args[])
+{
+
+	const char* ip = arg_to_str(argc, args, 1, "any", "ip");
+	uint16_t port = arg_to_int(argc, args, 2, 4567, "port");
+	int n_thread = arg_to_int(argc, args, 3, 1, "thread");
+	int n_client = arg_to_int(argc, args, 4, 1, "client");
+
+	if (strcmp(ip, "any") == 0)
+		ip = nullptr;
+
+	
 	CellLog::Instance().set_path("server_log", "w");
 	MyServer server1;
 	server1.init_socket();
-	server1.bind_port(nullptr, 4567);
+	server1.bind_port(ip, port);
 	server1.listen_port(5);
-	server1.start(6);
-
-	//MyServer server2;
-	//server2.init_socket();
-	//server2.bind_port(nullptr, 4568);
-	//server2.listen_port(5);
-	//server2.start(6);
-
+	server1.start(n_thread);
 
 
 	while (true)

@@ -61,7 +61,7 @@ public:
 		{
 			fclose(log_file_);
 			log_file_ = nullptr;
-			info("CellLog::set_path fclose\n");
+			info("CellLog::set_path fclose");
 
 		}
 
@@ -75,11 +75,11 @@ public:
 		log_file_ = fopen(log_path, mode);
 		if (log_file_)
 		{
-			info("CellLog::set_path success<%s,%s>\n", log_path, mode);
+			info("CellLog::set_path success<%s,%s>", log_path, mode);
 		}
 		else
 		{
-			info("CellLog::set_path failed<%s,%s>\n", log_path, mode);
+			info("CellLog::set_path failed<%s,%s>", log_path, mode);
 		}
 	}
 
@@ -144,10 +144,13 @@ public:
 				fprintf(plog->log_file_, "[%d-%d-%d %d:%d:%d] ",
 					now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 				fprintf(plog->log_file_, format, args...);
+				fprintf(plog->log_file_, "%s", "\n");
 				fflush(plog->log_file_);
 			}
 			//if (sizeof...(Args))
-				printf(format, args...);
+			printf("%s:", level);
+			printf(format, args...);
+			printf("\n");
 		});
 
 		
