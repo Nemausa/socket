@@ -33,7 +33,7 @@ public:
 		// 1.建立一个socket
 		if (pclient_)
 		{
-			CellLog::Info("<socket<%d> close old socket...\n", sock_);
+			CellLog::warning("<socket<%d> close old socket...\n", sock_);
 			close_socket();
 		}
 		sock_ = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
@@ -66,7 +66,7 @@ public:
 		int ret = connect(sock_, (sockaddr*)&_sin, sizeof(sockaddr));
 		if (SOCKET_ERROR == ret)
 		{
-			CellLog::Info("socket=%d, ip=%s, port=%d", sock_, ip, port);
+			CellLog::info("socket=%d, ip=%s, port=%d", sock_, ip, port);
 		}
 		else
 		{
@@ -117,15 +117,15 @@ public:
 		
 		if (ret < 0)
 		{
-			CellLog::Info("socket<%d>on_run.select error", sock_);
+			CellLog::error("socket<%d>on_run.select error", sock_);
 			close_socket();
 			return false;
 		}
 		if (FD_ISSET(sock_, &fd_read))
 		{
-			if (-1 == recv_data(sock_))
+			if (SOCKET_ERROR == recv_data(sock_))
 			{
-				CellLog::Info("socket<%d> select task ends 2", sock_);
+				CellLog::error("socket<%d> select task ends 2", sock_);
 				close_socket();
 				return false;
 			}
@@ -135,7 +135,7 @@ public:
 		{
 			if (-1 == pclient_->send_now())
 			{
-				CellLog::Info("socket<%d> select task ends 2", sock_);
+				CellLog::error("socket<%d> select task ends 2", sock_);
 				close_socket();
 				return false;
 			}

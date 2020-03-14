@@ -45,7 +45,7 @@ public:
 		}
 		break;
 		default:
-			CellLog::Info("socket=<%d> receive unknown message", (int)pclient_->sockfd());
+			CellLog::warning("socket=<%d> receive unknown message", (int)pclient_->sockfd());
 			break;
 		}
 	}

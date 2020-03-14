@@ -40,11 +40,11 @@ public:
 		break;
 		case  CMD_ERROR:
 		{
-			CellLog::Info("socket=<%d> receive error, data length=<%d>\n", (int)pclient_->sockfd(), head->length_);
+			CellLog::error("socket=<%d> receive error, data length=<%d>\n", (int)pclient_->sockfd(), head->length_);
 		}
 		break;
 		default:
-			CellLog::Info("socket=<%d> receive unknown message", (int)pclient_->sockfd());
+			CellLog::warning("socket=<%d> receive unknown message", (int)pclient_->sockfd());
 			break;
 		}
 	}
@@ -64,12 +64,12 @@ void cmd()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
-			CellLog::Info("exit thread");
+			CellLog::info("exit thread");
 			return;
 		}
 		else
 		{
-			CellLog::Info("不支持的命令");
+			CellLog::warning("不支持的命令");
 		}
 	}
 	
@@ -119,7 +119,7 @@ void send_thread(int id)
 		client[n]->connect_server(ip_local, 4567);
 		
 	}
-	CellLog::Info("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::info("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
 	
 	read_count++;
 	while (read_count < t_count)
@@ -146,8 +146,8 @@ void send_thread(int id)
 			if (SOCKET_ERROR != client[n]->send_data(login))
 				send_count++;	
 		
-		std::chrono::milliseconds t(10000);
-		std::this_thread::sleep_for(t);
+		/*std::chrono::milliseconds t(5000);
+		std::this_thread::sleep_for(t);*/
 	}
 
 	for (int n = begin; n < end; n++)
@@ -155,7 +155,7 @@ void send_thread(int id)
 		client[n]->close_socket();
 		delete client[n];
 	}
-	CellLog::Info("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::info("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
 }
 
 
@@ -183,7 +183,7 @@ int main()
 		auto t = timer.get_elapsed_second();
 		if (t > 1.0)
 		{
-			CellLog::Info("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
+			CELLLOG_DEBUG("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
 			send_count = 0;
 			timer.update();
 		}

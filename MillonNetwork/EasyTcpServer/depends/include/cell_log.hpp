@@ -21,6 +21,20 @@
 
 class CellLog
 {
+#ifdef _DEBUG
+	#ifndef CELLLOG_DEBUG
+	#define CELLLOG_DEBUG(...) CellLog::debug(__VA_ARGS__)
+	#endif // !1
+#else
+	#ifndef CELLLOG_DEBUG
+	#define CELLLOG_DEBUG(...) 
+	#endif // !1
+#endif
+#define CELLLOG_INFO(...)  CellLog::info(__VA_ARGS__)
+#define CELLLOG_WARN(...)  CellLog::warning(__VA_ARGS__)
+#define CELLLOG_ERROR(...) CellLog::error(__VA_ARGS__)
+
+
 private:
 	CellLog()
 	{
@@ -41,30 +55,81 @@ public:
 		return log;
 	}
 
-	void set_path(const char* path, const char* mode)
+	void set_path(const char* name, const char* mode)
 	{
 		if (log_file_)
 		{
 			fclose(log_file_);
 			log_file_ = nullptr;
-			Info("CellLog::set_path fclose\n");
+			info("CellLog::set_path fclose\n");
 
 		}
-					
-		log_file_ = fopen(path, mode);
+
+		static char log_path[512] = {};
+		auto t = system_clock::now();
+		auto tnow = system_clock::to_time_t(t);
+		std::tm* now = std::localtime(&tnow);
+		sprintf(log_path, "%s[%d-%d-%d %d-%d-%d].txt", name,
+			now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+
+		log_file_ = fopen(log_path, mode);
 		if (log_file_)
 		{
-			Info("CellLog::set_path success<%s,%s>\n", path, mode);
+			info("CellLog::set_path success<%s,%s>\n", log_path, mode);
 		}
 		else
 		{
-			Info("CellLog::set_path failed<%s,%s>\n", path, mode);
+			info("CellLog::set_path failed<%s,%s>\n", log_path, mode);
 		}
 	}
 
+	
+
+	static void error(const char* pstr)
+	{
+		error("%s", pstr);
+	}
+	template<typename ... Args>
+	static void error(const char* format, Args ... args)
+	{
+		echo("error", format, args...);
+	}
+
+
+	static void warning(const char* pstr)
+	{
+		warning("%s", pstr);
+	}
+	template<typename ... Args>
+	static void warning(const char* format, Args ... args)
+	{
+		echo("warning",format, args...);
+	}
+
+
+	static void debug(const char* pstr)
+	{
+		debug("%s", pstr);
+	}
+	template<typename ... Args>
+	static void debug(const char* format, Args ... args)
+	{
+		echo("debug",format, args...);
+	}
+
+
+	static void info(const char* pstr)
+	{
+		info("%s", pstr);
+	}
+	template<typename ... Args>
+	static void info(const char* format, Args ... args)
+	{
+		echo("info",format, args...);
+	}
 
 	template<typename ... Args>
-	static void Info(const char* format, Args ... args)
+	static void echo(const char* level, const char* format, Args ... args)
 	{
 		CellLog* plog = &Instance();
 		plog->task_server_.add_task([=]() 
@@ -74,15 +139,15 @@ public:
 				auto t = system_clock::now();
 				auto tnow = system_clock::to_time_t(t);
 				//fprintf(plog->log_file_, "%s", ctime(&now));
-				std::tm* now = std::gmtime(&tnow);
-				fprintf(plog->log_file_, "[%d-%d-%d %d:%d:%d] ", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+				std::tm* now = std::localtime(&tnow);
+				fprintf(plog->log_file_, "[%s] ", level);
+				fprintf(plog->log_file_, "[%d-%d-%d %d:%d:%d] ",
+					now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
 				fprintf(plog->log_file_, format, args...);
 				fflush(plog->log_file_);
 			}
-			if (sizeof...(Args))
+			//if (sizeof...(Args))
 				printf(format, args...);
-			else
-				printf("%s", format);
 		});
 
 		
@@ -90,6 +155,7 @@ public:
 private:
 	FILE* log_file_;
 	CellTaskServer task_server_;
+	
 };
 
 

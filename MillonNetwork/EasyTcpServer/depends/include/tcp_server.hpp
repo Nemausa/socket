@@ -58,7 +58,7 @@ private:
 			if (ret < 0)
 			{
 				thread_.exit();
-				CellLog::Info("TcpServer.on_run  select task ends \n");
+				CellLog::warning("TcpServer.on_run  select task ends \n");
 				close_socket();
 			}
 			if (FD_ISSET(sock_, &fd_read))
@@ -137,12 +137,12 @@ public:
 		int bs = ::bind(sock_, (sockaddr*)&_sin, sizeof(_sin));
 		if (SOCKET_ERROR == bs)
 		{
-			CellLog::Info("error, bind port <%d>error\n", port);
+			CellLog::error("bind port <%d>error\n", port);
 			return false;
 		}
 		else
 		{
-			CellLog::Info("bind port <%d>success\n", port);
+			CellLog::info("bind port <%d>success\n", port);
 		}
 		return true;
 	}
@@ -154,11 +154,11 @@ public:
 		int result =listen(sock_, count);
 		if (SOCKET_ERROR == result)
 		{
-			CellLog::Info("socket=<%d> error, listen error\n", (int)sock_);
+			CellLog::info("socket=<%d> error, listen error\n", (int)sock_);
 		}
 		else
 		{
-			CellLog::Info("socket=<%d> listen success\n", (int)sock_);
+			CellLog::info("socket=<%d> listen success\n", (int)sock_);
 		}
 
 		return result;
@@ -180,7 +180,7 @@ public:
 #endif
 		if (INVALID_SOCKET == csock)
 		{
-			CellLog::Info("socket=<%d> error, invalid socket\n", (int)sock_);
+			CellLog::error("socket=<%d> error, invalid socket\n", (int)sock_);
 			return INVALID_SOCKET;
 		}
 		else
@@ -224,7 +224,7 @@ public:
 	// 关闭socket
 	void close_socket()
 	{
-		CellLog::Info("Tcp_Server.close_socket 1\n");
+		CellLog::info("Tcp_Server.close_socket 1\n");
 		thread_.close();
 		if (INVALID_SOCKET == sock_)
 			return; 
@@ -239,7 +239,7 @@ public:
 		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
-		CellLog::Info("Tcp_Server.close_socket 2\n");
+		CellLog::info("Tcp_Server.close_socket 2\n");
 
 	}
 
@@ -252,7 +252,7 @@ public:
 		{
 			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
-			CellLog::Info("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", 
+			CELLLOG_DEBUG("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>\n", 
 				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
 
 			timer_.update();

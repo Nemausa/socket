@@ -15,12 +15,12 @@ void cmd()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
-			CellLog::Info("退出线程\n");
+			CellLog::info("退出线程\n");
 			return;
 		}
 		else
 		{
-			CellLog::Info("不支持的命令\n");
+			CellLog::info("不支持的命令\n");
 		}
 	}
 
@@ -42,14 +42,14 @@ public:
 		{
 			client->reset_heart();
 			NetLogin *login = (NetLogin*)head;
-			//CellLog::Info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
+			//CellLog::info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			NetLoginR ret;
 			if (0 == client->send_data(&ret))
 			{
 				//发送缓冲区满了，消息还没有发送出去
-				CellLog::Info("<socket=%d> send full \n", client->sockfd());
-				//CellLog::Info("<socket=%d> send full \n", client->sockfd());
+				CellLog::warning("<socket=%d> send full \n", client->sockfd());
+				//CellLog::info("<socket=%d> send full \n", client->sockfd());
 			}
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 			/*NetLoginR* ret = new NetLoginR();
@@ -103,7 +103,7 @@ public:
 		default:
 			NetDataHeader ret = {};
 			//send_data(csock, &ret);
-			CellLog::Info("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
+			CellLog::error("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
 			break;
 		}
 	}
@@ -132,11 +132,9 @@ private:
 
 
 
-
-
 int main()
 {
-	CellLog::Instance().set_path("log.txt", "w");
+	CellLog::Instance().set_path("server_log", "w");
 	MyServer server1;
 	server1.init_socket();
 	server1.bind_port(nullptr, 4567);
@@ -157,13 +155,15 @@ int main()
 		scanf("%s", buffer);
 		if (0 == strcmp(buffer, "exit"))
 		{
-			CellLog::Info("退出线程\n");
+			CellLog::info("退出线程\n");
 			break;;
 		}
 		else
 		{
-			CellLog::Info("不支持的命令\n");
+			CellLog::warning("不支持的命令\n");
 		}
+		std::chrono::microseconds dura(1);
+		std::this_thread::sleep_for(dura);
 	}
 	
 	//CellTaskServer task;
@@ -176,7 +176,7 @@ int main()
 	//	std::chrono::microseconds dura(1);
 	//	std::this_thread::sleep_for(dura);
 	//}
-	CellLog::Info("已退出\n");
+	CellLog::info("已退出\n");
 	return 0;
 }
 
