@@ -34,15 +34,12 @@ public:
 	{
 		thread_.start(nullptr, [this](CellThread* pthread) {
 			on_run(pthread);
-		}, nullptr);
+		});
 	}
 
 	void close()
 	{
-		//CellLog::info("CellTaskServer%d.close begin", server_id_);
-		thread_.close();
-		//CellLog::info("CellTaskServer%d.close end", server_id_);
-		
+		thread_.close();	
 	}
 
 
@@ -62,17 +59,13 @@ public:
 			}
 			if(task_list_.empty())
 			{
-				std::chrono::milliseconds t(1);
-				std::this_thread::sleep_for(t);
+				CellThread::sleep(1);
 				continue;
 			}
 
 			for (auto task:task_list_)
 				task();
-
 			task_list_.clear();
-
-			
 		}	
 
 		// 处理缓存队列中的任务

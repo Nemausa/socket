@@ -119,7 +119,7 @@ public:
 				return nlen;
 			}
 		}
-
+		CELLLOG_ERROR("CellStream::ReadArray failed.");
 		return 0;
 	}
 
@@ -250,20 +250,7 @@ public:
 		return write(n);
 	}
 	
-	bool write_string(const std::string str)
-	{
-		return write_array(str.c_str(), str.length());
-	}
 
-	bool write_string(const char* str)
-	{
-		return write_array(str, strlen(str));
-	}
-
-	bool write_string(const char* str, int len)
-	{
-		return write_array(str, len);
-	}
 
 
 private:

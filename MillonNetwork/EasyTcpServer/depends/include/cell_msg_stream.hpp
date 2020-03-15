@@ -25,14 +25,13 @@ public:
 	CellReadStream(NetDataHeader* head)
 		:CellStream((char*)head, head->length_)
 	{
-		push(head->length_);
 		
 	}
 
 	CellReadStream(char* pdata, int size, bool b_delete = false)
 		:CellStream(pdata, size, b_delete)
 	{
-		
+		push(size);
 	}
 
 	CellReadStream(int size = 1024)
@@ -45,7 +44,6 @@ public:
 	{
 		uint16_t cmd = CMD_ERROR;
 		read<uint16_t>(cmd);
-		write<uint16_t>(cmd);
 		return cmd;
 	}
 
@@ -69,6 +67,26 @@ public:
 		write<int16_t>(0);
 	}
 
+	void set_cmd(uint16_t cmd)
+	{
+		write<int16_t>(cmd);
+	}
+
+	bool write_string(std::string& str)
+	{
+		return write_array(str.c_str(), str.length());
+	}
+
+	bool write_string(const char* str)
+	{
+		return write_array(str, strlen(str));
+	}
+
+	bool write_string(const char* str, int len)
+	{
+		return write_array(str, len);
+	}
+
 	void finish()
 	{
 		int pos = length();
@@ -77,10 +95,6 @@ public:
 		setWritePos(pos);
 	}
 
-	void set_cmd(uint16_t cmd)
-	{
-		write<int16_t>(cmd);
-	}
 };
 
 

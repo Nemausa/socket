@@ -19,17 +19,19 @@
 class CellBuffer
 {
 public:
-	CellBuffer(int size) 
+	CellBuffer(int size=8192) 
 	{
 		size_ = size;
 		buffer_ = new char[size_];
-		length_ = 0;
-		full_count_ = 0;
 	}
 	~CellBuffer() 
 	{
 		if (buffer_)
+		{
 			delete[] buffer_;
+			buffer_ = nullptr;
+		}
+			
 	}
 
 	char* data()
@@ -37,7 +39,7 @@ public:
 		return buffer_;
 	}
 
-	bool push(const char* pdata, int length)
+	bool push(const char* pdata, int len)
 	{
 		//if (last_ + length > size_)
 		//{
@@ -52,101 +54,106 @@ public:
 		//	delete[] buffer_;
 		//	buffer_ = buff;
 		//}
-		if (length_ + length <= size_)
+		if (last_ + len <= size_)
 		{
 			// 将要发送的数据拷贝到发送缓冲区尾部
-			memcpy(buffer_ + length_, pdata, length);
+			memcpy(buffer_ + last_, pdata, len);
 			// 数据尾部位置
-			length_ += length;
-			if (length_ == size_)
+			last_ += len;
+			
+			if (last_ == size_)
 				full_count_++;
 			return true;
 		}
 		else
 		{
-			full_count_++;
+			++full_count_;
 		}
 		return false;
 	}
 
-	void pop(int length)
+	void pop(int len)
 	{
-		int n = length_ - length;
+		int n = last_ - len;
 		if (n > 0)
 		{
-			memcpy(buffer_, buffer_ + length, n);
+			memcpy(buffer_, buffer_ + len, n);
 		}
-		length_ = n;
+		last_ = n;
 		if (full_count_ > 0)
 			--full_count_;
 
 	}
 
 
-	int write_socket(SOCKET sockfd)
+	int write_to_socket(SOCKET sockfd)
 	{
 		int ret = 0;
-		if (length_ > 0)
+		if (last_ > 0)
 		{
-			ret = send(sockfd, buffer_, length_, 0);
+			ret = send(sockfd, buffer_, last_, 0);
 			if(ret<=0)
 			{
+				CellLog::error("write2socket1:sockfd<%d> nSize<%d> nLast<%d> ret<%d>", sockfd, size_, last_, ret);
 				return SOCKET_ERROR;
 			}
-			else if (ret == length_)
+			else if (ret == last_)
 			{
 				// 数据尾部清零
-				length_ = 0;
+				last_ = 0;
 			}
 			else
 			{
-				length_ -= ret;
-				memcpy(buffer_, buffer_ + ret, length_);
+				//last_=2000 实际发送ret=1000
+				last_ -= ret;
+				memcpy(buffer_, buffer_ + ret, last_);
 			}
 			full_count_ = 0;
 		}
 		return ret;
 	}
 
-	int read_socket(SOCKET sockfd)
+	int read_for_socket(SOCKET sockfd)
 	{
 		
-		if (size_ - length_ < 0)
+		if (size_ - last_ <= 0)
 			return 0;
-		char *recv_buf = buffer_ + length_;
-		int len = (int)recv(sockfd, recv_buf, size_ - length_, 0);
+			
+		char *recv_buf = buffer_ + last_;
+		int len = (int)recv(sockfd, recv_buf, size_ - last_, 0);
 		if (len <= 0)
 		{
+			CELLLOG_ERROR("read4socket:sockfd<%d> nSize<%d> nLast<%d> nLen<%d>", sockfd, size_, last_, len);
 			return SOCKET_ERROR;
 		}
-		length_ += len;
+		last_ += len;
 		return  len;
 	}
 
 	bool has_msg()
 	{
-		if (length_ >= sizeof(NetDataHeader))
+		if (last_ >= sizeof(NetDataHeader))
 		{
 			// 这时候就知道了当前消息的长度
 			NetDataHeader *head = (NetDataHeader*)buffer_;
 			// 判断消息缓冲区的数据长度大于消息长度
-			return (length_ >= head->length_);
+			return (last_ >= head->length_);
 		}
 		return false;
 	}
 	
 	bool need_write()
 	{
-		return length_;
+		return last_>0;
 	}
 
 private:
 	// 可以用链表和队列管理缓存
 	//list<char*> list_buffer_;
 	char* buffer_;  
-	int length_;	// 缓冲区实际数据的长度
-	int size_;		// 缓冲区字节长度
-	int full_count_;
+	int last_ = 0;	// 缓冲区实际数据的长度
+	int size_ = 0;		// 缓冲区字节长度
+	int full_count_ = 0;
 };
 
 

@@ -7,26 +7,7 @@ using namespace std;
 #include "cell_msg_stream.hpp"
 #include "cell_config.hpp"
 
-bool g_run = true;
-void cmd()
-{
-	while (true)
-	{
-		char buffer[256] = {};
-		scanf("%s", buffer);
-		if (0 == strcmp(buffer, "exit"))
-		{
-			g_run = false;
-			CellLog::info("退出线程");
-			return;
-		}
-		else
-		{
-			CellLog::info("不支持的命令");
-		}
-	}
 
-}
 
 CellTimeStamp timer;
 auto t = timer.get_elapsed_second();
@@ -152,7 +133,7 @@ public:
 	}
 
 private:
-	bool sendback_;
+	bool sendback_ = true;
 	bool sendfull_;
 	bool checkid_;
 };
@@ -181,7 +162,7 @@ int main(int argc, char* args[])
 	MyServer server1;
 	server1.init_socket();
 	server1.bind_port(ip, port);
-	server1.listen_port(5);
+	server1.listen_port(64);
 	server1.start(n_thread);
 
 
@@ -192,6 +173,7 @@ int main(int argc, char* args[])
 		if (0 == strcmp(buffer, "exit"))
 		{
 			CellLog::info("退出线程");
+			server1.close_socket();
 			break;;
 		}
 		else

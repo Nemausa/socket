@@ -79,7 +79,6 @@ public:
 			sprintf(log_path, "%s.txt", name);
 		}
 		
-
 		log_file_ = fopen(log_path, mode);
 		if (log_file_)
 		{

@@ -36,7 +36,7 @@ public:
 	void init(int argc, char* args[])
 	{
 		exe_path_ = args[0];
-		for (int n = 0; n < argc; n++)
+		for (int n = 1; n < argc; n++)
 		{
 			made_cmd(args[n]);
 		}
@@ -86,11 +86,11 @@ public:
 		if (iter != kv_.end())
 		{
 			def = atoi(iter->second.c_str());
-			CellLog::info("get_str, key=%s, value=%d", key, def);
+			CellLog::info("get_int, key=%s, value=%d", key, def);
 		}
 		else
 		{
-			CellLog::error("get_str, key=%s not found", key);
+			CellLog::error("get_int, key=%s not found", key);
 		}
 
 		return def;

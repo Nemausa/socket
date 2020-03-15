@@ -40,11 +40,11 @@ public:
 		
 		if (INVALID_SOCKET == sock_)
 		{
-			cout << "socket error" << endl;
+			CELLLOG_ERROR("create socket failed...");
 		}
 		else
 		{
-			pclient_ = new CellClient(sock_);
+			pclient_ = new CellClient(sock_, send_buffer_size, recv_buffer_size);
 		}
 
 		return sock_;
@@ -53,13 +53,13 @@ public:
 	// 连接服务器
 	int connect_server(const char* ip, unsigned short port)
 	{
-		/*if (!pclient_)
+		if (!pclient_)
 		{
-			if ( INVALID_SOCKET==init_socket())
+			if (INVALID_SOCKET == init_socket())
 			{
 				return SOCKET_ERROR;
 			}
-		}*/
+		}
 		sockaddr_in _sin = {};
 		_sin.sin_family = AF_INET;
 		_sin.sin_port = htons(port);
@@ -110,25 +110,23 @@ public:
 		if(pclient_->need_write())
 		{
 			FD_SET(sock_, &fd_write);
-			ret = select((int)sock_ + 1, &fd_read, &fd_write, 0, &tm);
+			ret = select((int)sock_ + 1, &fd_read, &fd_write, nullptr, &tm);
 		}
 		else
 		{
-			ret = select((int)sock_ + 1, &fd_read, nullptr, 0, &tm);
+			ret = select((int)sock_ + 1, &fd_read, nullptr, nullptr, &tm);
 		}
-			
 
-		
 		
 		if (ret < 0)
 		{
-			CellLog::info("socket<%d>on_run.select error", sock_);
+			CellLog::info("socket<%d>on_run.select exit", sock_);
 			close_socket();
 			return false;
 		}
 		if (FD_ISSET(sock_, &fd_read))
 		{
-			if (-1 == recv_data(sock_))
+			if (SOCKET_ERROR == recv_data(sock_))
 			{
 				CellLog::info("socket<%d> select task ends 2", sock_);
 				close_socket();
@@ -138,7 +136,7 @@ public:
 
 		if (FD_ISSET(sock_, &fd_write))
 		{
-			if (-1 == pclient_->send_now())
+			if (SOCKET_ERROR == pclient_->send_now())
 			{
 				CellLog::info("socket<%d> select task ends 2", sock_);
 				close_socket();
@@ -159,6 +157,9 @@ public:
 	// 接受数据 处理粘包 拆包
 	int recv_data(SOCKET _csock)
 	{
+		if (!is_run())
+			return 0;
+
 		int len = pclient_->recv_data();
 		if (len > 0)
 		{
@@ -176,11 +177,15 @@ public:
 	// 发送数据
 	int send_data(NetDataHeader *head)
 	{
+		if (!is_run())
+			return SOCKET_ERROR;
 		return pclient_->send_data(head);	
 	}
 
 	int send_data(const char* pdata, int len)
 	{
+		if (!is_run())
+			return SOCKET_ERROR;
 		return pclient_->send_data(pdata, len);
 	}
 

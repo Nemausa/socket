@@ -17,7 +17,7 @@
 
 enum CMD
 {
-	CMD_LOGIN,
+	CMD_LOGIN = 10,
 	CMD_LOGIN_RESULT,
 	CMD_SIGNOUT,
 	CMD_SIGNOUT_RESULT,
@@ -29,8 +29,13 @@ enum CMD
 
 struct NetDataHeader
 {
-	short length_;
-	short cmd_;
+	NetDataHeader()
+	{
+		length_ = sizeof(NetDataHeader);
+		cmd_ = CMD_ERROR;
+	}
+	unsigned short length_;
+	unsigned short cmd_;
 };
 
 struct NetLogin : public NetDataHeader

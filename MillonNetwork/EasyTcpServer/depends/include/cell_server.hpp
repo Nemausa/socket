@@ -36,13 +36,13 @@ public:
 	{
 		id_ = id;
 		pevent_ = nullptr;
-		old_time_ = CellTime::get_time_millisecond();
+	
 		task_server_.server_id_ = id;
 	}
 	virtual ~CellServer()
 	{
 		CellLog::info("CellServer%d.~CellServer exit begin ", id_);
-		exit();
+		close();
 		CellLog::info("CellServer%d.~CellServer exit end ", id_);
 
 	}
@@ -65,7 +65,7 @@ public:
 	}
 
 	// 关闭socket
-	void exit()
+	void close()
 	{
 		CellLog::info("CellServer%d.close_socket begin", id_);
 		
@@ -107,7 +107,8 @@ public:
 			if (clients_.empty())
 			{
 				CellThread::sleep(1);
-				old_time_ = CellTime::get_time_millisecond();
+				// 旧的时间戳
+				old_time_ = CellTime::get_now_millisecond();
 				continue;
 			}
 
@@ -117,9 +118,7 @@ public:
 				pthread->exit();
 				break;
 			}
-			//do_msg();
-			//write_data(fd_except);
-			//CellLog::info("CellServer%d.on_run.select: fd_read=%d, fd_write=%d ", id_, fd_read.fd_count, fd_write.fd_count);
+			do_msg();
 		}
 		CellLog::info("CellServer%d.on_run", id_);
 		
@@ -142,9 +141,7 @@ public:
 				if (iter.second->sockfd() > max_socket_)
 					max_socket_ = iter.second->sockfd();
 			}
-
 			memcpy(&fd_read_back_, &fd_read, sizeof(fd_set));
-
 		}
 		else
 		{
@@ -162,7 +159,6 @@ public:
 				need_write = true;
 				FD_SET(iter.second->sockfd(), &fd_write);
 			}
-
 		}
 
 		//memcpy(&fd_write, &fd_read_back_, sizeof(fd_set));
@@ -186,12 +182,12 @@ public:
 		}
 		else if (ret == 0)
 		{
-			CellThread::sleep(1);
+			//CellThread::sleep(1);
 			return true;;
 		}
 
 		read_data(fd_read);
-		//write_data(fd_write);
+		write_data(fd_write);
 
 		return true;
 	}
@@ -200,7 +196,7 @@ public:
 	
 	void check_time()
 	{
-		auto now = CellTime::get_time_millisecond();
+		auto now = CellTime::get_now_millisecond();
 		auto dt = now - old_time_;
 		old_time_ = now;
 		for (auto iter = clients_.begin(); iter != clients_.end();)
@@ -276,7 +272,7 @@ public:
 			auto iter = clients_.find(fd_write.fd_array[n]);
 			if (iter != clients_.end())
 			{
-				if (-1 == iter->second->send_now())
+				if (SOCKET_ERROR == iter->second->send_now())
 				{
 					on_client_leave(iter->second);
 					clients_.erase(iter);
@@ -316,7 +312,7 @@ public:
 		while (pclient->has_msg())
 		{
 			// 处理网络消息
-			net_msg(pclient, pclient->front_msg());
+			on_net_msg(pclient, pclient->front_msg());
 			// 移除消息队列最前面的一条数据
 			pclient->pop();
 		}
@@ -326,17 +322,16 @@ public:
 	int recv_data(CellClient *client)
 	{
 		int len = client->recv_data();
-		if (len <= 0)
+		/*if (len <= 0)
 		{
 			return SOCKET_ERROR;
-		}
+		}*/
 		// 触发<接收网络数据>事件
 		pevent_->on_recv(client);
-		do_msg();
 		return len;
 	}
 
-	virtual void net_msg(CellClient* client, NetDataHeader *head)
+	virtual void on_net_msg(CellClient* client, NetDataHeader *head)
 	{
 		pevent_->on_net_msg(this, client, head);
 	}
@@ -352,14 +347,14 @@ public:
 		return clients_.size() + clients_quene_.size();
 	}
 
-	void add_send_task(CellClient* client, NetDataHeader *head)
-	{
-		//CellSend2CellTask *task = new CellSend2CellTask(client, head);
-		task_server_.add_task([client, head]() {
-			client->send_data(head);
-			delete head;
-		});
-	}
+	// void add_send_task(CellClient* client, NetDataHeader *head)
+	// {
+		// //CellSend2CellTask *task = new CellSend2CellTask(client, head);
+		// task_server_.add_task([client, head]() {
+			// client->send_data(head);
+			// delete head;
+		// });
+	// }
 private:
 	void clear_clients()
 	{

@@ -39,14 +39,14 @@ int n_recv_buffer_size = RECV_BUFF_SIZE;
 // 检测收到服务器消息ID是否连续
 bool g_run = true;
 
-std::atomic_int send_count;
-std::atomic_int read_count;
-std::atomic_int n_connect;
+std::atomic_int send_count(0);
+std::atomic_int read_count(0);
+std::atomic_int n_connect(0);
 
 const char ip_linux[] = "149.28.194.79";
 const char ip_windows[] = "167.179.105.207";
-//const char ip_local[] = "127.0.0.1";
-const char ip_local[] = "192.168.1.101";
+const char ip_local[] = "127.0.0.1";
+//const char ip_local[] = "192.168.1.101";
 
 
 class MyClient:public TcpClient
@@ -112,7 +112,7 @@ public:
 				--send_count_;
 			}
 		}
-		return send_count_;
+		return ret;
 	}
 
 	bool check_send(time_t dt)
@@ -136,26 +136,6 @@ private:
 	int send_count_ = 0;	// 发送条数计数
 	bool b_checkid = false;
 };
-
-void cmd()
-{
-	while (true)
-	{
-		char buffer[256] = {};
-		scanf("%s", buffer);
-		if (0 == strcmp(buffer, "exit"))
-		{
-			g_run = false;
-			CellLog::info("exit thread");
-			return;
-		}
-		else
-		{
-			CellLog::warning("不支持的命令");
-		}
-	}
-	
-}
 
 
 void work_thread(CellThread* pthread, int id)
@@ -206,68 +186,59 @@ void work_thread(CellThread* pthread, int id)
 	// 收发数据都是通过onrun线程
 	// senddata知识将数据写入发送缓冲区
 	// 等待select检测可写时才发送数据
-	auto t2 = CellTime::get_time_millisecond();
+	auto t2 = CellTime::get_now_millisecond();
 	auto t0 = t2;
 	auto dt = t0;
 
 	CellTimeStamp timer;
 	while (pthread->is_run())
 	{
-		for (int n = begin; n < end; n++)
+		t0 = CellTime::get_now_millisecond();
+		dt = t0 - t2;
+		t2 = t0;
+
+		int count = 0;
+		// 每轮每个客户端发送n_msg条数据
+		for (int m = 0; m < n_msg; m++)
 		{
-			if (SOCKET_ERROR != clients[n]->send_data(&login))
+			for (int n = begin; n < end; n++)
 			{
-				++send_count;
+				// 每个客户端一条一条的写入
+				if (clients[n]->is_run())
+				{
+					if (clients[n]->send_test(&login)>0)
+						++send_count;
+				}
 			}
-			else
-			{
-				cout << "send error";
-			}
-			clients[n]->on_run(1);
 		}
 
+
+		for (int n = begin; n < end; n++)
+		{
+			if (clients[n]->is_run())
+			{
+				if (!clients[n]->on_run(0))
+				{
+					n_connect--;
+					continue;
+				}
+				// 检测发送计数是否要重置
+				clients[n]->check_send(dt);
+			}
+
+		}
+
+		CellThread::sleep(n_worksleep);
+
 	}
-	//while (pthread->is_run())
-	//{
-	//	t0 = CellTime::get_time_millisecond();
-	//	dt = t0 - t2;
-	//	t2 = t0;
 
-	//	int count = 0;
-	//	// 每轮每个客户端发送n_msg条数据
-	//	for (int m = 0; m < n_msg; m++)
-	//	{
-	//		for (int n = begin; n < end; n++)
-	//		{
-	//			// 每个客户端一条一条的写入
-	//			if (clients[n]->is_run())
-	//			{
-	//				if (clients[n]->send_test(&login)>0)
-	//					++send_count;
-	//			}
-	//		}
-	//	}
-
-
-	//	for (int n = begin; n < end; n++)
-	//	{
-	//		if (clients[n]->is_run())
-	//		{
-	//			if (!clients[n]->on_run(0))
-	//			{
-	//				n_connect--;
-	//				continue;
-	//			}
-	//			// 检测发送计数是否要重置
-	//			clients[n]->check_send(dt);
-	//		}
-
-	//	}
-
-	//	CellThread::sleep(n_worksleep);
-
-	//}
-
+	for (int n = begin; n < end;n++)
+	{
+		clients[n]->close_socket();
+		delete clients[n];
+	}
+	CellLog::info("thread<%d>,exit", id);
+	--read_count;
 
 }
 
@@ -282,8 +253,8 @@ int main(int argc, char* args[])
 	port = CellConfig::Instance().get_int("port", 4567);
 	n_thread = CellConfig::Instance().get_int("n_thread", 1);
 	n_client = CellConfig::Instance().get_int("n_client", 10);
-	n_msg = CellConfig::Instance().get_int("n_msg", 100);
-	n_sendsleep = CellConfig::Instance().get_int("n_sendsleep", 1);
+	n_msg = CellConfig::Instance().get_int("n_msg", 10);
+	n_sendsleep = CellConfig::Instance().get_int("n_sendsleep", 1000);
 	n_worksleep = CellConfig::Instance().get_int("n_worksleep", 1);
 	n_send_buffer_size = CellConfig::Instance().get_int("n_send_buffer_size", SEND_BUFF_SIZE);
 	n_recv_buffer_size = CellConfig::Instance().get_int("n_recv_buffer_size", RECV_BUFF_SIZE);
@@ -292,7 +263,21 @@ int main(int argc, char* args[])
 	// 用于接受运行时用户输出的命令
 	CellThread tcmd;
 	tcmd.start(nullptr, [=](CellThread* pthread) {
-		cmd();
+		while (true)
+		{
+			char buffer[256] = {};
+			scanf("%s", buffer);
+			if (0 == strcmp(buffer, "exit"))
+			{
+				g_run = false;
+				CellLog::info("exit thread");
+				return;
+			}
+			else
+			{
+				CellLog::warning("不支持的命令");
+			}
+		}
 	});
 
 	// 启动模拟客户端线程

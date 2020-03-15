@@ -21,7 +21,7 @@ class CellTime
 {
 public:
 	// 获取当前时间
-	static time_t get_time_millisecond()
+	static time_t get_now_millisecond()
 	{
 		return duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch()).count();
 	}

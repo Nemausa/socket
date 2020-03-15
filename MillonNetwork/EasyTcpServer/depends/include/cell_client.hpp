@@ -27,7 +27,8 @@ class CellClient
 {
 public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET, int send_buf=SEND_BUFF_SIZE, int recv_buf=RECV_BUFF_SIZE):
-		send_buf_(send_buf),recv_buf_(recv_buf)
+		send_buf_(send_buf),
+		recv_buf_(recv_buf)
 	{
 		static int n = 1;
 		id = n++;
@@ -37,7 +38,7 @@ public:
 	}
 	virtual ~CellClient()
 	{
-		CELLLOG_DEBUG("server=%d, CellClient%d.~CellClient", server_id,id);
+		CELLLOG_INFO("server=%d, CellClient%d.~CellClient", server_id,id);
 		if (INVALID_SOCKET == sockfd_)
 			return;
 
@@ -46,6 +47,7 @@ public:
 #else
 		close(sockfd_);
 #endif
+		sockfd_ = INVALID_SOCKET;
 	}
 
 	SOCKET sockfd()
@@ -55,7 +57,7 @@ public:
 
 	int recv_data()
 	{
-		return recv_buf_.read_socket(sockfd_);
+		return recv_buf_.read_for_socket(sockfd_);
 	}
 
 	bool has_msg()
@@ -83,7 +85,7 @@ public:
 	int send_now()
 	{
 		reset_send();
-		return send_buf_.write_socket(sockfd_);
+		return send_buf_.write_to_socket(sockfd_);
 	}
 
 	// 缓冲区的控制根据业务需求的差异而调整
@@ -106,22 +108,24 @@ public:
 		dt_heart_ = 0;
 	}
 
+	
+	void reset_send()
+	{
+		dt_send_ = 0;
+	}
+
 	bool check_heart(time_t dt)
 	{
 		dt_heart_ += dt;
 		if (dt_heart_ >= CLIENT_HEART_DEAD_TIME)
 		{
-			//CellLog::info("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
+			CellLog::info("check heat:socket=%d, time=%d\n", sockfd_, dt_heart_);
 			return true;
 		}
 		return false;
 		//return dt_heart_ >= CLIENT_HEART_DEAD_TIME;
 	}
 
-	void reset_send()
-	{
-		dt_send_ = 0;
-	}
 
 	bool check_send(time_t dt)
 	{
@@ -140,7 +144,6 @@ public:
 public:
 	int id = -1;
 	int server_id = -1;
-
 	//测试接收发逻辑使用
 	// 用于server检测收到的消息ID是否连续
 	int recv_id_ = 1;

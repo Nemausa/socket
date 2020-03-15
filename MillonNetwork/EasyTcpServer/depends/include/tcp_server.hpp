@@ -45,33 +45,6 @@ using namespace std;
 
 class TcpServer:public INetEvent
 {
-private:
-	void on_run(CellThread* pthread)
-	{
-		while (pthread->is_run())
-		{
-			time_for_msg();
-			fd_set fd_read;
-			FD_ZERO(&fd_read);
-			FD_SET(sock_, &fd_read);
-			timeval t = { 0, 1 };
-			int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
-			if (ret < 0)
-			{
-				thread_.exit();
-				CellLog::warning("TcpServer.on_run  select task ends ");
-				close_socket();
-			}
-			if (FD_ISSET(sock_, &fd_read))
-			{
-				FD_CLR(sock_, &fd_read);
-				accpet_client();
-			}
-		} 
-		
-
-		
-	}
 public:
 	TcpServer()
 	{
@@ -104,7 +77,7 @@ public:
 
 		if (INVALID_SOCKET != sock_)
 		{
-			cout << "close an existing socket:" << sock_ << endl;
+			CELLLOG_INFO("warning, initsocket close old socket<%d>...", (int)sock_);
 			close_socket();
 		}
 		// 建立一个TCP服务器
@@ -193,7 +166,7 @@ public:
 			if (clients_count_ < max_clients_)
 			{
 				// 将客户端分配给最小的处理线程
-				add_client_to_server(new CellClient(csock));
+				add_client_to_server(new CellClient(csock, send_buffer_size_, recv_buffer_size_));
 			}
 			else
 			{
@@ -238,7 +211,9 @@ public:
 			ser->start();
 		}
 
-		thread_.start(nullptr, [this](CellThread* pthread) { on_run(pthread);});
+		thread_.start(nullptr, [this](CellThread* pthread) { 
+			on_run(pthread);
+		});
 	}
 
 	// 关闭socket
@@ -259,28 +234,9 @@ public:
 		close(sock_);
 #endif
 		sock_ = INVALID_SOCKET;
-		CellLog::info("Tcp_Server.close_socket 2");
+		CellLog::info("Tcp_Server.close_socket");
 
 	}
-
-
-	// 网络消息计数
-	void time_for_msg()
-	{
-		auto t = timer_.get_elapsed_second();
-		if (t > 1.0)
-		{
-
-			CELLLOG_INFO("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>", 
-				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
-
-			timer_.update();
-			msg_count_ = 0;
-			recv_count_ = 0;
-		}
-	}
-
-
 
 	// 多线程出发 不安全
 	virtual void on_net_msg(CellServer* cell_server,CellClient* client, NetDataHeader *head)
@@ -304,6 +260,46 @@ public:
 	virtual void on_recv(CellClient* client)
 	{
 		recv_count_++;
+	}
+
+private:
+	void on_run(CellThread* pthread)
+	{
+		while (pthread->is_run())
+		{
+			time_for_msg();
+			fd_set fd_read;
+			FD_ZERO(&fd_read);
+			FD_SET(sock_, &fd_read);
+			timeval t = { 0, 1 };
+			int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
+			if (ret < 0)
+			{
+				thread_.exit();
+				CellLog::warning("TcpServer.on_run  select exit. ");
+			}
+			if (FD_ISSET(sock_, &fd_read))
+			{
+				//FD_CLR(sock_, &fd_read);
+				accpet_client();
+			}
+		}
+
+	}
+	// 网络消息计数
+	void time_for_msg()
+	{
+		auto t = timer_.get_elapsed_second();
+		if (t >= 1.0)
+		{
+
+			CELLLOG_INFO("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>",
+				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
+
+			msg_count_ = 0;
+			recv_count_ = 0;
+			timer_.update();
+		}
 	}
 
 private:
