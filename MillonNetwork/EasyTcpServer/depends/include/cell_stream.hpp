@@ -106,7 +106,7 @@ public:
 		// 读取数组的元素个数
 		uint32_t nlen = 0;
 		read(nlen, false);
-		if (nlen < len)
+		if (nlen <= len)
 		{
 			// 计算数组的字节长度
 			auto size = sizeof(T)*nlen;

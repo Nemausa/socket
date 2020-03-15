@@ -26,7 +26,7 @@ public:
 	}
 
 	// 初始化socket
-	void init_socket()
+	SOCKET init_socket(int send_buffer_size=SEND_BUFF_SIZE, int recv_buffer_size=RECV_BUFF_SIZE)
 	{
 		CellNetWork::Init();
 		// 建立一个TCP客户端
@@ -46,15 +46,20 @@ public:
 		{
 			pclient_ = new CellClient(sock_);
 		}
+
+		return sock_;
 	}
 
 	// 连接服务器
 	int connect_server(const char* ip, unsigned short port)
 	{
-		if (!pclient_)
+		/*if (!pclient_)
 		{
-			init_socket();
-		}
+			if ( INVALID_SOCKET==init_socket())
+			{
+				return SOCKET_ERROR;
+			}
+		}*/
 		sockaddr_in _sin = {};
 		_sin.sin_family = AF_INET;
 		_sin.sin_port = htons(port);
@@ -66,7 +71,7 @@ public:
 		int ret = connect(sock_, (sockaddr*)&_sin, sizeof(sockaddr));
 		if (SOCKET_ERROR == ret)
 		{
-			CellLog::info("socket=%d, ip=%s, port=%d", sock_, ip, port);
+			CellLog::error("socket=%d, ip=%s, port=%d", sock_, ip, port);
 		}
 		else
 		{
@@ -89,7 +94,7 @@ public:
 
 
 	// 处理网络消息
-	bool on_run()
+	bool on_run(int microseconds =1)
 	{
 		if (!is_run())
 			return false;
@@ -99,7 +104,7 @@ public:
 		fd_set fd_write;
 		FD_ZERO(&fd_write);
 		
-		timeval tm = { 0, 1 };
+		timeval tm = { 0, microseconds };
 		int ret = 0;
 		FD_SET(sock_, &fd_read);
 		if(pclient_->need_write())

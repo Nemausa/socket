@@ -30,7 +30,7 @@ private:
 public:
 	CellThread()
 	{
-		is_start_ = false;
+		is_run_ = false;
 	}
 	~CellThread() 
 	{
@@ -43,10 +43,10 @@ public:
 		EventCall on_destory = nullptr)
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
-		if (is_start_)
+		if (is_run_)
 			return;
 
-		is_start_ = true;
+		is_run_ = true;
 		if (on_create)
 			on_create_ = on_create;
 		if (on_run)
@@ -58,16 +58,14 @@ public:
 		std::thread t(std::mem_fn(&CellThread::on_work), this);
 		t.detach();
 
-		
-
 	}
 
 	void close()
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
-		if (!is_start_)
+		if (!is_run_)
 			return;
-		is_start_ = false;
+		is_run_ = false;
 		signal_.wait();
 
 	}
@@ -76,13 +74,13 @@ public:
 	void exit()
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
-		if (is_start_)
-			is_start_ = false;
+		if (is_run_)
+			is_run_ = false;
 	}
 
 	bool is_run()
 	{
-		return is_start_;
+		return is_run_;
 	}
 
 
@@ -98,6 +96,7 @@ protected:
 			on_destory_(this);
 
 		signal_.wakeup();
+		is_run_ = false;
 
 	}
 
@@ -107,7 +106,7 @@ private:
 	EventCall on_destory_;
 	CellSignal signal_;	// 控制线程的终止
 	std::mutex mutex_;	// 改变数据是需要加锁
-	bool is_start_;		// 是否启动运行中
+	bool is_run_;		// 是否启动运行中
 };
 
 

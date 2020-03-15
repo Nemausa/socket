@@ -40,6 +40,7 @@ using namespace std;
 #include "net_event.hpp"
 #include "cell_server.hpp"
 #include "cell_net_work.hpp"
+#include "cell_config.hpp"
 
 
 class TcpServer:public INetEvent
@@ -79,6 +80,10 @@ public:
 		msg_count_ = 0;
 		clients_count_ = 0;
 		recv_count_ = 0;
+		send_buffer_size_ = CellConfig::Instance().get_int("send_buffer_size", SEND_BUFF_SIZE);
+		recv_buffer_size_ = CellConfig::Instance().get_int("recv_buffer_size", RECV_BUFF_SIZE);
+		max_clients_ = CellConfig::Instance().get_int("max_client", 20000);
+
 		
 	}
 	virtual ~TcpServer()
@@ -185,8 +190,23 @@ public:
 		}
 		else
 		{
-			// 将客户端分配给最小的处理线程
-			add_client_to_server(new CellClient(csock));
+			if (clients_count_ < max_clients_)
+			{
+				// 将客户端分配给最小的处理线程
+				add_client_to_server(new CellClient(csock));
+			}
+			else
+			{
+#ifdef _WIN32
+				// 关闭套接字
+				closesocket(sock_);
+#else
+				close(sock_);
+#endif
+				// 获取ip地址
+				CellLog::warning("ip<%s> accept to maxclient", inet_ntoa(client_addr.sin_addr));
+			}
+			
 		}
 		// 获取ip地址：inet_ntoa(client_addr.sin_addr)
 		return csock;
@@ -250,7 +270,6 @@ public:
 		auto t = timer_.get_elapsed_second();
 		if (t > 1.0)
 		{
-			//cout << " therad " << (int)cell_servers_.size() << ",time " << t << ",socket " << (int)sock_ << ",clients " << clients_count_ << ",msg_count " << msg_count_ << ",recv_count " << recv_count_ << endl;
 
 			CELLLOG_INFO("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>", 
 				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
@@ -294,6 +313,12 @@ private:
 	CellThread thread_;
 	CellTimeStamp timer_;
 	SOCKET sock_;
+	// 客户端发送缓冲区大小
+	int send_buffer_size_;
+	// 客户端接收缓冲区大小
+	int recv_buffer_size_;
+	// 客户端连接上限
+	int max_clients_;
 
 protected:
 	// 受到消息计数

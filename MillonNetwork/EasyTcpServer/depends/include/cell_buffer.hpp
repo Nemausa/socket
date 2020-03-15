@@ -117,8 +117,7 @@ public:
 		int len = (int)recv(sockfd, recv_buf, size_ - length_, 0);
 		if (len <= 0)
 		{
-
-			return len;
+			return SOCKET_ERROR;
 		}
 		length_ += len;
 		return  len;

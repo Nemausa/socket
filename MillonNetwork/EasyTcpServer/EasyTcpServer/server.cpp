@@ -2,6 +2,7 @@
 #include <vector>
 #include <thread>
 using namespace std;
+
 #include "tcp_server.hpp"
 #include "cell_msg_stream.hpp"
 #include "cell_config.hpp"
@@ -33,28 +34,51 @@ auto t = timer.get_elapsed_second();
 class MyServer :public TcpServer
 {
 public:
-	// 多线程出发 不安全
-	virtual void on_net_msg(CellServer* cell_server, CellClient* client, NetDataHeader *head)
+	MyServer()
 	{
-		TcpServer::on_net_msg(cell_server, client, head);
+		sendback_ = CellConfig::Instance().exist_key("-sendback");
+		sendfull_ = CellConfig::Instance().exist_key("-sendfull");
+		checkid_ = CellConfig::Instance().exist_key("-checkid");
+	}
+	// 多线程出发 不安全
+	virtual void on_net_msg(CellServer* cell_server, CellClient* pclient, NetDataHeader *head)
+	{
+		TcpServer::on_net_msg(cell_server, pclient, head);
 		switch (head->cmd_)
 		{
 		case CMD_LOGIN:
 		{
-			client->reset_heart();
+			pclient->reset_heart();
 			NetLogin *login = (NetLogin*)head;
-			//CellLog::info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>", (int)csock, login->length_, login->username_, login->passwd_);
-			// 判断用户密码正确的过程
-			NetLoginR ret;
-			if (0 == client->send_data(&ret))
+			// 检查消息ID
+			if (checkid_)
 			{
-				//发送缓冲区满了，消息还没有发送出去
-				CellLog::warning("<socket=%d> send full ", client->sockfd());
-				//CellLog::info("<socket=%d> send full ", client->sockfd());
+				if (login->id_ != pclient->recv_id_)
+					CellLog::error("socket<%d> msgid<%d> recvid<%d> %d", pclient->sockfd(), login->id_, pclient->recv_id_, login->id_ - pclient->recv_id_);
+				++pclient->recv_id_;
 			}
-			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
-			/*NetLoginR* ret = new NetLoginR();
-			cell_server->add_send_task(client, ret);*/
+			// 回应消息
+			if (sendback_)
+			{
+				NetLoginR ret;
+				ret.id_ = pclient->send_id_;
+				if (SOCKET_ERROR == pclient->send_data(&ret))
+				{
+					// 发送缓冲区满了，消息还没有发出去，目前直接抛弃
+					// 客户端消息太多了，需要考虑对应的策略
+					// 正常连接，业务端不会有那么多消息
+					// 模拟并发测试时是否发送频率过高
+					if (sendfull_)
+					{
+						CellLog::warning("<socket=%d> send full", pclient->sockfd());
+					}
+				}
+				else
+				{
+					++pclient->send_id_;
+				}
+			}
+			
 		}
 		break;
 		case CMD_SIGNOUT:
@@ -90,21 +114,21 @@ public:
 			int b[] = { 1,2,3,4,5 };
 			s.write_array(b, 5);
 			s.finish();
-			client->send_data(s.data(), s.length());
+			pclient->send_data(s.data(), s.length());
 			
 		}
 		break;
 		case CMD_HEART_C2S:
 		{
-			client->reset_heart();
+			pclient->reset_heart();
 			Net_C2S_Heart ret;
-			client->send_data(&ret);
+			pclient->send_data(&ret);
 		}
 		break;
 		default:
 			NetDataHeader ret = {};
 			//send_data(csock, &ret);
-			CellLog::error("command CMD_ERROR socket=<%d> data length=<%d>", (int)client->sockfd(), ret.length_);
+			CellLog::error("command CMD_ERROR socket=<%d> data length=<%d>", (int)pclient->sockfd(), ret.length_);
 			break;
 		}
 	}
@@ -128,18 +152,21 @@ public:
 	}
 
 private:
-
+	bool sendback_;
+	bool sendfull_;
+	bool checkid_;
 };
 
 
 
 int main(int argc, char* args[])
 {
+	CellLog::Instance().set_path("server_log", "w", false);
+
 	CellConfig::Instance().init(argc, args);
 	const char* ip = CellConfig::Instance().get_str("ip", "any");
 	uint16_t port = CellConfig::Instance().get_int("port", 4567);
-	int n_thread = CellConfig::Instance().get_int("thread", 2);
-	int n_client = CellConfig::Instance().get_int("client", 1);
+	int n_thread = CellConfig::Instance().get_int("thread", 1);
 
 	if (CellConfig::Instance().exist_key("-p"))
 	{
@@ -150,7 +177,7 @@ int main(int argc, char* args[])
 		ip = nullptr;
 
 	
-	CellLog::Instance().set_path("server_log", "w");
+	
 	MyServer server1;
 	server1.init_socket();
 	server1.bind_port(ip, port);
@@ -175,16 +202,7 @@ int main(int argc, char* args[])
 		std::this_thread::sleep_for(dura);
 	}
 	
-	//CellTaskServer task;
-	//task.start();
-	//Sleep(100);
-	//task.exit();
 
-	//while (true)
-	//{
-	//	std::chrono::microseconds dura(1);
-	//	std::this_thread::sleep_for(dura);
-	//}
 	CellLog::info("已退出");
 	return 0;
 }

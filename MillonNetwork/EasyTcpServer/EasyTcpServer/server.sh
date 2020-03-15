@@ -14,10 +14,15 @@
 #std::map<k,v>
 ########################
 cd `dirname $0`
+#服务器IP地址
 cmd='ip=any'
+#服务器端口
 cmd=$cmd' port=5000'
+#消息处理线程数量
 cmd=$cmd' thread=4'
+#客户端连接上限
 cmd="$cmd client=5"
+#特殊参数
 cmd=$cmd' -p'
 
 

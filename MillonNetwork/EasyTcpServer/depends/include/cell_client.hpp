@@ -26,7 +26,8 @@
 class CellClient
 {
 public:
-	CellClient(SOCKET sockfd = INVALID_SOCKET):send_buf_(SEND_BUFF_SIZE),recv_buf_(RECV_BUFF_SIZE)
+	CellClient(SOCKET sockfd = INVALID_SOCKET, int send_buf=SEND_BUFF_SIZE, int recv_buf=RECV_BUFF_SIZE):
+		send_buf_(send_buf),recv_buf_(recv_buf)
 	{
 		static int n = 1;
 		id = n++;
@@ -139,6 +140,12 @@ public:
 public:
 	int id = -1;
 	int server_id = -1;
+
+	//测试接收发逻辑使用
+	// 用于server检测收到的消息ID是否连续
+	int recv_id_ = 1;
+	// 用于检测client收到的消息是否连续
+	int send_id_ = 1; 
 
 private:
 	SOCKET sockfd_;						// socket fd_set file desc set

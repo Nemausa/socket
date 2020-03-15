@@ -38,14 +38,16 @@ struct NetLogin : public NetDataHeader
 	NetLogin() { cmd_ = CMD_LOGIN; length_ = sizeof(NetLogin); }
 	char username_[32];
 	char passwd_[32];
-	char data[32];
+	char data[28];
+	int id_;
 };
 
 struct NetLoginR :public NetDataHeader
 {
 	NetLoginR() { cmd_ = CMD_LOGIN_RESULT, length_ = sizeof(NetLoginR); result_ = 0; }
 	int result_;
-	char data[92];
+	char data[88];
+	int id_;
 };
 
 struct NetMsgSignOut :public NetDataHeader

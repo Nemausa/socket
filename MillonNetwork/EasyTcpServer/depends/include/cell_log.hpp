@@ -56,7 +56,7 @@ public:
 		return log;
 	}
 
-	void set_path(const char* name, const char* mode)
+	void set_path(const char* name, const char* mode, bool date)
 	{
 		if (log_file_)
 		{
@@ -65,13 +65,20 @@ public:
 			info("CellLog::set_path fclose");
 
 		}
-
 		static char log_path[512] = {};
-		auto t = system_clock::now();
-		auto tnow = system_clock::to_time_t(t);
-		std::tm* now = std::localtime(&tnow);
-		sprintf(log_path, "%s[%d-%d-%d %d-%d-%d].txt", name,
-			now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+		if (date)
+		{
+			auto t = system_clock::now();
+			auto tnow = system_clock::to_time_t(t);
+			std::tm* now = std::localtime(&tnow);
+			sprintf(log_path, "%s[%d-%d-%d %d-%d-%d].txt", name,
+				now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+		}
+		else
+		{
+			sprintf(log_path, "%s.txt", name);
+		}
+		
 
 		log_file_ = fopen(log_path, mode);
 		if (log_file_)
@@ -139,7 +146,6 @@ public:
 			{
 				auto t = system_clock::now();
 				auto tnow = system_clock::to_time_t(t);
-				//fprintf(plog->log_file_, "%s", ctime(&now));
 				std::tm* now = std::localtime(&tnow);
 				fprintf(plog->log_file_, "[%s] ", level);
 				fprintf(plog->log_file_, "[%d-%d-%d %d:%d:%d] ",

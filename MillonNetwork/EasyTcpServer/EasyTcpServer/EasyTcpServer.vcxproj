@@ -172,6 +172,28 @@
   <ItemGroup>
     <ClCompile Include="server.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="server.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\depends\include\cell.hpp" />
+    <ClInclude Include="..\depends\include\cell_buffer.hpp" />
+    <ClInclude Include="..\depends\include\cell_client.hpp" />
+    <ClInclude Include="..\depends\include\cell_config.hpp" />
+    <ClInclude Include="..\depends\include\cell_log.hpp" />
+    <ClInclude Include="..\depends\include\cell_msg_stream.hpp" />
+    <ClInclude Include="..\depends\include\cell_net_work.hpp" />
+    <ClInclude Include="..\depends\include\cell_server.hpp" />
+    <ClInclude Include="..\depends\include\cell_signal.hpp" />
+    <ClInclude Include="..\depends\include\cell_stream.hpp" />
+    <ClInclude Include="..\depends\include\cell_task.hpp" />
+    <ClInclude Include="..\depends\include\cell_thread.hpp" />
+    <ClInclude Include="..\depends\include\cell_time_stamp.hpp" />
+    <ClInclude Include="..\depends\include\message.hpp" />
+    <ClInclude Include="..\depends\include\net_event.hpp" />
+    <ClInclude Include="..\depends\include\tcp_client.hpp" />
+    <ClInclude Include="..\depends\include\tcp_server.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

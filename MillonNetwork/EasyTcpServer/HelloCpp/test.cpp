@@ -56,7 +56,7 @@ private:
 
 int main()
 {
-	CellLog::Instance().set_path("log.txt", "w");
+	CellLog::Instance().set_path("log.txt", "w", false);
 
 	CellWriteStream s(128);
 	s.set_cmd(CMD_SIGNOUT);
