@@ -4,6 +4,7 @@
 using namespace std;
 #include "tcp_server.hpp"
 #include "cell_msg_stream.hpp"
+#include "cell_config.hpp"
 
 bool g_run = true;
 void cmd()
@@ -15,12 +16,12 @@ void cmd()
 		if (0 == strcmp(buffer, "exit"))
 		{
 			g_run = false;
-			CellLog::info("退出线程\n");
+			CellLog::info("退出线程");
 			return;
 		}
 		else
 		{
-			CellLog::info("不支持的命令\n");
+			CellLog::info("不支持的命令");
 		}
 	}
 
@@ -42,14 +43,14 @@ public:
 		{
 			client->reset_heart();
 			NetLogin *login = (NetLogin*)head;
-			//CellLog::info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>\n", (int)csock, login->length_, login->username_, login->passwd_);
+			//CellLog::info("command CMD_LOGIN socket=<%d> data length=<%d> username=<%s> passwd=<%s>", (int)csock, login->length_, login->username_, login->passwd_);
 			// 判断用户密码正确的过程
 			NetLoginR ret;
 			if (0 == client->send_data(&ret))
 			{
 				//发送缓冲区满了，消息还没有发送出去
-				CellLog::warning("<socket=%d> send full \n", client->sockfd());
-				//CellLog::info("<socket=%d> send full \n", client->sockfd());
+				CellLog::warning("<socket=%d> send full ", client->sockfd());
+				//CellLog::info("<socket=%d> send full ", client->sockfd());
 			}
 			// 接收-消息 ----处理发送   生产者 数据缓冲区  消费者
 			/*NetLoginR* ret = new NetLoginR();
@@ -103,7 +104,7 @@ public:
 		default:
 			NetDataHeader ret = {};
 			//send_data(csock, &ret);
-			CellLog::error("command CMD_ERROR socket=<%d> data length=<%d>\n", (int)client->sockfd(), ret.length_);
+			CellLog::error("command CMD_ERROR socket=<%d> data length=<%d>", (int)client->sockfd(), ret.length_);
 			break;
 		}
 	}
@@ -130,42 +131,20 @@ private:
 
 };
 
-const char* arg_to_str(int argc, char* args[], int index, const char* def, const char* name)
-{
-	if (index >= argc)
-	{
-		CellLog::error("argtostr, index=%d, argc=%d, name=%s", index, argc, name);
-	}
-	else
-	{
-		def = args[index];
-	}
-	CellLog::info("%s=%s", name, def);
-	return def;
-}
-
-int arg_to_int(int argc, char* args[], int index, int def, const char* name)
-{
-	if (index >= argc)
-	{
-		CellLog::error("arg_to_int, index=%d, argc=%d, name=%s", index, argc, name);
-	}
-	else
-	{
-		def = atoi(args[index]);
-	}
-	CellLog::info("%s=%d", name, def);
-	return def;
-}
 
 
 int main(int argc, char* args[])
 {
+	CellConfig::Instance().init(argc, args);
+	const char* ip = CellConfig::Instance().get_str("ip", "any");
+	uint16_t port = CellConfig::Instance().get_int("port", 4567);
+	int n_thread = CellConfig::Instance().get_int("thread", 2);
+	int n_client = CellConfig::Instance().get_int("client", 1);
 
-	const char* ip = arg_to_str(argc, args, 1, "any", "ip");
-	uint16_t port = arg_to_int(argc, args, 2, 4567, "port");
-	int n_thread = arg_to_int(argc, args, 3, 1, "thread");
-	int n_client = arg_to_int(argc, args, 4, 1, "client");
+	if (CellConfig::Instance().exist_key("-p"))
+	{
+		CellLog::info("exist key");
+	}
 
 	if (strcmp(ip, "any") == 0)
 		ip = nullptr;
@@ -185,12 +164,12 @@ int main(int argc, char* args[])
 		scanf("%s", buffer);
 		if (0 == strcmp(buffer, "exit"))
 		{
-			CellLog::info("退出线程\n");
+			CellLog::info("退出线程");
 			break;;
 		}
 		else
 		{
-			CellLog::warning("不支持的命令\n");
+			CellLog::warning("不支持的命令");
 		}
 		std::chrono::microseconds dura(1);
 		std::this_thread::sleep_for(dura);
@@ -206,7 +185,7 @@ int main(int argc, char* args[])
 	//	std::chrono::microseconds dura(1);
 	//	std::this_thread::sleep_for(dura);
 	//}
-	CellLog::info("已退出\n");
+	CellLog::info("已退出");
 	return 0;
 }
 

@@ -40,7 +40,7 @@ public:
 		break;
 		case  CMD_ERROR:
 		{
-			CellLog::error("socket=<%d> receive error, data length=<%d>\n", (int)pclient_->sockfd(), head->length_);
+			CellLog::error("socket=<%d> receive error, data length=<%d>", (int)pclient_->sockfd(), head->length_);
 		}
 		break;
 		default:
@@ -119,7 +119,7 @@ void send_thread(int id)
 		client[n]->connect_server(ip_local, 4567);
 		
 	}
-	CellLog::info("thread<%d>,connect<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::info("thread<%d>,connect<beging=%d,end=%d>", id, begin, end);
 	
 	read_count++;
 	while (read_count < t_count)
@@ -155,7 +155,7 @@ void send_thread(int id)
 		client[n]->close_socket();
 		delete client[n];
 	}
-	CellLog::info("thread<%d>,exit<beging=%d,end=%d>\n", id, begin, end);
+	CellLog::info("thread<%d>,exit<beging=%d,end=%d>", id, begin, end);
 }
 
 
@@ -183,7 +183,7 @@ int main()
 		auto t = timer.get_elapsed_second();
 		if (t > 1.0)
 		{
-			CELLLOG_DEBUG("thread<%d>,clients<%d>,time<%lf>,send_count<%d>\n", t_count, c_count, t, (int)(send_count/t));
+			CELLLOG_DEBUG("thread<%d>,clients<%d>,time<%lf>,send_count<%d>", t_count, c_count, t, (int)(send_count/t));
 			send_count = 0;
 			timer.update();
 		}

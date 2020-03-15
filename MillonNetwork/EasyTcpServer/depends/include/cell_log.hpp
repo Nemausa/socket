@@ -30,6 +30,7 @@ class CellLog
 	#define CELLLOG_DEBUG(...) 
 	#endif // !1
 #endif
+//#define CELLLOG_DEBUG(...) CellLog::debug(__VA_ARGS__)
 #define CELLLOG_INFO(...)  CellLog::info(__VA_ARGS__)
 #define CELLLOG_WARN(...)  CellLog::warning(__VA_ARGS__)
 #define CELLLOG_ERROR(...) CellLog::error(__VA_ARGS__)

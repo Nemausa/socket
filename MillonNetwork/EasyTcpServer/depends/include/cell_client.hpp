@@ -36,7 +36,7 @@ public:
 	}
 	virtual ~CellClient()
 	{
-		CELLLOG_DEBUG("server=%d, CellClient%d.~CellClient\n", server_id,id);
+		CELLLOG_DEBUG("server=%d, CellClient%d.~CellClient", server_id,id);
 		if (INVALID_SOCKET == sockfd_)
 			return;
 

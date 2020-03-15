@@ -39,9 +39,9 @@ public:
 
 	void close()
 	{
-		//CellLog::info("CellTaskServer%d.close begin\n", server_id_);
+		//CellLog::info("CellTaskServer%d.close begin", server_id_);
 		thread_.close();
-		//CellLog::info("CellTaskServer%d.close end\n", server_id_);
+		//CellLog::info("CellTaskServer%d.close end", server_id_);
 		
 	}
 
@@ -78,7 +78,7 @@ public:
 		// 处理缓存队列中的任务
 		for (auto task : task_buf_)
 			task();
-		//CellLog::info("CellTaskServer%d.on_run exit\n", server_id_);
+		//CellLog::info("CellTaskServer%d.on_run exit", server_id_);
 		
 	}
 public:
