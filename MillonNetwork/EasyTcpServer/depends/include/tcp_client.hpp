@@ -191,8 +191,8 @@ public:
 	}
 
 protected:
-	CELLFDSet fd_read_;
-	CELLFDSet fd_write_;
+	CellFDSet fd_read_;
+	CellFDSet fd_write_;
 	SOCKET sock_;
 	CellClient *pclient_ = nullptr;
 	bool is_connect_ = false;

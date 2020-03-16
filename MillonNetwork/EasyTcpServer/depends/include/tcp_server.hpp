@@ -250,7 +250,7 @@ public:
 private:
 	void on_run(CellThread* pthread)
 	{
-		CELLFDSet fd_read;
+		CellFDSet fd_read;
 		while (pthread->is_run())
 		{
 			time_for_msg();

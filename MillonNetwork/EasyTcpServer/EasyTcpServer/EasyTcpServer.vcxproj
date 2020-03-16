@@ -173,9 +173,6 @@
     <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="server.bat" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\depends\include\cell.hpp" />
     <ClInclude Include="..\depends\include\cell_buffer.hpp" />
     <ClInclude Include="..\depends\include\cell_client.hpp" />

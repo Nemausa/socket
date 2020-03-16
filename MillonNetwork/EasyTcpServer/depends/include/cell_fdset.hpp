@@ -5,10 +5,10 @@
 
 #define CELL_MAX_FD 10240
 
-class CELLFDSet
+class CellFDSet
 {
 public:
-	CELLFDSet()
+	CellFDSet()
 	{
 		int nSocketNum = CELL_MAX_FD;
 #ifdef _WIN32
@@ -20,7 +20,7 @@ public:
 		memset(_pfdset, 0, _nfdSize);
 	}
 
-	~CELLFDSet()
+	~CellFDSet()
 	{
 		if (_pfdset)
 		{
@@ -68,7 +68,7 @@ public:
 		return _pfdset;
 	}
 
-	void copy(CELLFDSet& set)
+	void copy(CellFDSet& set)
 	{
 		memcpy(_pfdset, set.fdset(), set._nfdSize);
 	}

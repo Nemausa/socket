@@ -358,9 +358,9 @@ private:
 	// 缓冲客户对列
 	vector<CellClient*> clients_quene_;
 	// 备份客户socket fd_set
-	CELLFDSet fd_read_back_;
-	CELLFDSet fd_read_;
-	CELLFDSet fd_write_;
+	CellFDSet fd_read_back_;
+	CellFDSet fd_read_;
+	CellFDSet fd_write_;
 	CellTaskServer task_server_;
 
 	// 网络事件
