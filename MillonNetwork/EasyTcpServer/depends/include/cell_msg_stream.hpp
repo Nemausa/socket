@@ -34,12 +34,6 @@ public:
 		push(size);
 	}
 
-	CellReadStream(int size = 1024)
-		:CellStream(size)
-	{
-		
-	}
-
 	uint16_t get_cmd()
 	{
 		uint16_t cmd = CMD_ERROR;

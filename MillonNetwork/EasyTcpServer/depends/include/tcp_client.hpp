@@ -9,6 +9,7 @@ using namespace std;
 #include "message.hpp"
 #include "cell_net_work.hpp"
 #include "cell_client.hpp"
+#include "cell_fdset.hpp"
 
 //缓冲区最小单元的大小
 #define  RECV_BUFF_SIZE 10240
@@ -44,6 +45,7 @@ public:
 		}
 		else
 		{
+			CellNetWork::make_reuseaddr(sock_);
 			pclient_ = new CellClient(sock_, send_buffer_size, recv_buffer_size);
 		}
 
@@ -99,22 +101,20 @@ public:
 		if (!is_run())
 			return false;
 
-		fd_set fd_read;
-		FD_ZERO(&fd_read);
-		fd_set fd_write;
-		FD_ZERO(&fd_write);
-		
+		fd_read_.zero();
+		fd_read_.add(sock_);
+		fd_write_.zero();
+
 		timeval tm = { 0, microseconds };
 		int ret = 0;
-		FD_SET(sock_, &fd_read);
 		if(pclient_->need_write())
 		{
-			FD_SET(sock_, &fd_write);
-			ret = select((int)sock_ + 1, &fd_read, &fd_write, nullptr, &tm);
+			fd_write_.add(sock_);
+			ret = select((int)sock_ + 1, fd_read_.fdset(), fd_write_.fdset(), nullptr, &tm);
 		}
 		else
 		{
-			ret = select((int)sock_ + 1, &fd_read, nullptr, nullptr, &tm);
+			ret = select((int)sock_ + 1, fd_read_.fdset(), nullptr, nullptr, &tm);
 		}
 
 		
@@ -124,7 +124,7 @@ public:
 			close_socket();
 			return false;
 		}
-		if (FD_ISSET(sock_, &fd_read))
+		if (fd_read_.has(sock_))
 		{
 			if (SOCKET_ERROR == recv_data(sock_))
 			{
@@ -134,7 +134,7 @@ public:
 			}
 		}
 
-		if (FD_ISSET(sock_, &fd_write))
+		if (fd_write_.has(sock_))
 		{
 			if (SOCKET_ERROR == pclient_->send_now())
 			{
@@ -177,22 +177,25 @@ public:
 	// 发送数据
 	int send_data(NetDataHeader *head)
 	{
-		if (!is_run())
-			return SOCKET_ERROR;
-		return pclient_->send_data(head);	
+		if (is_run())
+			return pclient_->send_data(head);
+		return SOCKET_ERROR;
 	}
 
 	int send_data(const char* pdata, int len)
 	{
-		if (!is_run())
-			return SOCKET_ERROR;
-		return pclient_->send_data(pdata, len);
+		if (is_run())
+			return pclient_->send_data(pdata, len);
+		return SOCKET_ERROR;
+		
 	}
 
 protected:
-	CellClient *pclient_ = nullptr;
+	CELLFDSet fd_read_;
+	CELLFDSet fd_write_;
 	SOCKET sock_;
-	bool is_connect_;
+	CellClient *pclient_ = nullptr;
+	bool is_connect_ = false;
 
 };
 

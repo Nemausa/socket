@@ -26,8 +26,7 @@ public:
 	void add_task(CellTask task)
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
-		task_buf_.push_back(task);
-		
+		task_buf_.push_back(task);	
 	}
 
 	void start()
@@ -42,7 +41,7 @@ public:
 		thread_.close();	
 	}
 
-
+protected:
 	void on_run(CellThread* pthread)
 	{
 		while (pthread->is_run())
@@ -50,13 +49,13 @@ public:
 			if (!task_buf_.empty())
 			{
 				std::lock_guard<std::mutex> lg(mutex_);
-
 				for (auto task : task_buf_)
 				{
 					task_list_.push_back(task);
 				}
 				task_buf_.clear();
 			}
+
 			if(task_list_.empty())
 			{
 				CellThread::sleep(1);
@@ -65,6 +64,7 @@ public:
 
 			for (auto task:task_list_)
 				task();
+
 			task_list_.clear();
 		}	
 

@@ -28,13 +28,6 @@ using namespace std;
 #include "message.hpp"
 #include "cell_time_stamp.hpp"
 #include "cell_task.hpp"
-
-
-#ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
-#define SEND_BUFF_SIZE RECV_BUFF_SIZE
-#endif
-
 #include "cell.hpp"
 #include "cell_client.hpp"
 #include "net_event.hpp"
@@ -49,7 +42,6 @@ public:
 	TcpServer()
 	{
 		sock_ = INVALID_SOCKET;
-		memset(recv_buf_, 0, RECV_BUFF_SIZE);
 		msg_count_ = 0;
 		clients_count_ = 0;
 		recv_count_ = 0;
@@ -64,17 +56,10 @@ public:
 		close_socket();
 	}
 
-
-	TcpServer(const TcpServer&)
-	{
-		
-	}
-	//TcpServer& operator=(const TcpServer&) = delete;
 	// 初始化socket
 	SOCKET init_socket()
 	{
 		CellNetWork::Init();
-
 		if (INVALID_SOCKET != sock_)
 		{
 			CELLLOG_INFO("warning, initsocket close old socket<%d>...", (int)sock_);
@@ -89,6 +74,7 @@ public:
 		}
 		else
 		{
+			CellNetWork::make_reuseaddr(sock_);
 			cout << "socket created successfully" << endl;
 		}
 		return sock_;
@@ -97,8 +83,8 @@ public:
 	// 绑定端口
 	int bind_port(const char* ip, unsigned int port)
 	{
-		if (INVALID_SOCKET == sock_)
-			init_socket();
+		/*if (INVALID_SOCKET == sock_)
+			init_socket();*/
 		// 2.bind 绑定用于接受客户端的网络端口
 		sockaddr_in _sin = {};
 		_sin.sin_family = AF_INET;
@@ -112,8 +98,8 @@ public:
 #else
 		_sin.sin_addr.s_addr = ip_s; //inet_addr("127.0.0.1");
 #endif
-		int bs = ::bind(sock_, (sockaddr*)&_sin, sizeof(_sin));
-		if (SOCKET_ERROR == bs)
+		int ret = ::bind(sock_, (sockaddr*)&_sin, sizeof(_sin));
+		if (SOCKET_ERROR == ret)
 		{
 			CellLog::error("bind port <%d>error", port);
 			return false;
@@ -122,7 +108,7 @@ public:
 		{
 			CellLog::info("bind port <%d>success", port);
 		}
-		return true;
+		return ret;
 	}
 
 	// 监听端口
@@ -159,12 +145,12 @@ public:
 		if (INVALID_SOCKET == csock)
 		{
 			CellLog::error("socket=<%d> error, invalid socket", (int)sock_);
-			return INVALID_SOCKET;
 		}
 		else
 		{
 			if (clients_count_ < max_clients_)
 			{
+				CellNetWork::make_reuseaddr(csock);
 				// 将客户端分配给最小的处理线程
 				add_client_to_server(new CellClient(csock, send_buffer_size_, recv_buffer_size_));
 			}
@@ -195,7 +181,6 @@ public:
 				min_server = cell;
 		}
 		min_server->addClient(client);
-		//on_join(client);
 	}
 
 	void start(int servers)
@@ -265,20 +250,21 @@ public:
 private:
 	void on_run(CellThread* pthread)
 	{
+		CELLFDSet fd_read;
 		while (pthread->is_run())
 		{
 			time_for_msg();
-			fd_set fd_read;
-			FD_ZERO(&fd_read);
-			FD_SET(sock_, &fd_read);
+			
+			fd_read.zero();
+			fd_read.add(sock_);
 			timeval t = { 0, 1 };
-			int ret = select((int)sock_ + 1, &fd_read, 0, 0, &t);
+			int ret = select((int)sock_ + 1, fd_read.fdset(), 0, 0, &t);
 			if (ret < 0)
 			{
 				thread_.exit();
 				CellLog::warning("TcpServer.on_run  select exit. ");
 			}
-			if (FD_ISSET(sock_, &fd_read))
+			if (fd_read.has(sock_))
 			{
 				//FD_CLR(sock_, &fd_read);
 				accpet_client();
@@ -293,8 +279,8 @@ private:
 		if (t >= 1.0)
 		{
 
-			CELLLOG_INFO("thread<%d>,time<%lf>,socket<%d>,clients<%d>,msg_count<%d>,recv_count<%d>",
-				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)msg_count_, (int)recv_count_);
+			CELLLOG_INFO("thread<%d>,time<%lf>,socket<%d>,clients<%d>,recv_count<%d>,msg_count<%d>",
+				(int)cell_servers_.size(), t, (int)sock_, (int)clients_count_, (int)recv_count_, (int)msg_count_);
 
 			msg_count_ = 0;
 			recv_count_ = 0;
@@ -303,7 +289,6 @@ private:
 	}
 
 private:
-	char recv_buf_[RECV_BUFF_SIZE];
 	// 消息处理对象，内部会创建线程
 	vector<CellServer*> cell_servers_;
 	CellThread thread_;
@@ -321,7 +306,8 @@ protected:
 	std::atomic_int msg_count_ ;
 	// 客户端数量
 	std::atomic_int clients_count_;
-	std::atomic_int recv_count_; // recv 函数计数
+	// recv 函数计数
+	std::atomic_int recv_count_; 
 
 };
 

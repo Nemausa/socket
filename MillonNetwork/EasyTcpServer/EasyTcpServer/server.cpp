@@ -1,12 +1,12 @@
-﻿#include <iostream>
+﻿
+#include <iostream>
 #include <vector>
 #include <thread>
-using namespace std;
 
 #include "tcp_server.hpp"
 #include "cell_msg_stream.hpp"
 #include "cell_config.hpp"
-
+using namespace std;
 
 
 CellTimeStamp timer;
@@ -51,7 +51,7 @@ public:
 					// 模拟并发测试时是否发送频率过高
 					if (sendfull_)
 					{
-						CellLog::warning("<socket=%d> send full", pclient->sockfd());
+						CELLLOG_DEBUG("<socket=%d> send full", pclient->sockfd());
 					}
 				}
 				else
@@ -59,7 +59,7 @@ public:
 					++pclient->send_id_;
 				}
 			}
-			
+
 		}
 		break;
 		case CMD_SIGNOUT:
@@ -96,7 +96,7 @@ public:
 			s.write_array(b, 5);
 			s.finish();
 			pclient->send_data(s.data(), s.length());
-			
+
 		}
 		break;
 		case CMD_HEART_C2S:
@@ -142,7 +142,7 @@ private:
 
 int main(int argc, char* args[])
 {
-	CellLog::Instance().set_path("server_log", "w", false);
+	CellLog::Instance().set_log_path("server_log", "w", false);
 
 	CellConfig::Instance().init(argc, args);
 	const char* ip = CellConfig::Instance().get_str("ip", "any");
@@ -157,13 +157,13 @@ int main(int argc, char* args[])
 	if (strcmp(ip, "any") == 0)
 		ip = nullptr;
 
-	
-	
-	MyServer server1;
-	server1.init_socket();
-	server1.bind_port(ip, port);
-	server1.listen_port(64);
-	server1.start(n_thread);
+
+
+	MyServer server;
+	server.init_socket();
+	server.bind_port(ip, port);
+	server.listen_port(64);
+	server.start(n_thread);
 
 
 	while (true)
@@ -173,7 +173,7 @@ int main(int argc, char* args[])
 		if (0 == strcmp(buffer, "exit"))
 		{
 			CellLog::info("退出线程");
-			server1.close_socket();
+			server.close_socket();
 			break;;
 		}
 		else
@@ -183,7 +183,7 @@ int main(int argc, char* args[])
 		std::chrono::microseconds dura(1);
 		std::this_thread::sleep_for(dura);
 	}
-	
+
 
 	CellLog::info("已退出");
 	return 0;

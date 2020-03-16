@@ -180,6 +180,7 @@
     <ClInclude Include="..\depends\include\cell_buffer.hpp" />
     <ClInclude Include="..\depends\include\cell_client.hpp" />
     <ClInclude Include="..\depends\include\cell_config.hpp" />
+    <ClInclude Include="..\depends\include\cell_fdset.hpp" />
     <ClInclude Include="..\depends\include\cell_log.hpp" />
     <ClInclude Include="..\depends\include\cell_msg_stream.hpp" />
     <ClInclude Include="..\depends\include\cell_net_work.hpp" />

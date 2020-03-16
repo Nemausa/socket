@@ -61,8 +61,9 @@ public:
 			// 数据尾部位置
 			last_ += len;
 			
-			if (last_ == size_)
-				full_count_++;
+			if (last_ == SEND_BUFF_SIZE)
+				++full_count_;
+
 			return true;
 		}
 		else
@@ -89,12 +90,12 @@ public:
 	int write_to_socket(SOCKET sockfd)
 	{
 		int ret = 0;
-		if (last_ > 0)
+		if (last_ > 0 && INVALID_SOCKET != sockfd)
 		{
 			ret = send(sockfd, buffer_, last_, 0);
 			if(ret<=0)
 			{
-				CellLog::error("write2socket1:sockfd<%d> nSize<%d> nLast<%d> ret<%d>", sockfd, size_, last_, ret);
+				CellLog::error("write_to_socket:sockfd<%d> size<%d> last<%d> ret<%d>", sockfd, size_, last_, ret);
 				return SOCKET_ERROR;
 			}
 			else if (ret == last_)
@@ -116,18 +117,22 @@ public:
 	int read_for_socket(SOCKET sockfd)
 	{
 		
-		if (size_ - last_ <= 0)
-			return 0;
-			
-		char *recv_buf = buffer_ + last_;
-		int len = (int)recv(sockfd, recv_buf, size_ - last_, 0);
-		if (len <= 0)
+		if (size_ - last_ > 0)
 		{
-			CELLLOG_ERROR("read4socket:sockfd<%d> nSize<%d> nLast<%d> nLen<%d>", sockfd, size_, last_, len);
-			return SOCKET_ERROR;
+			char *recv_buf = buffer_ + last_;
+			int len = (int)recv(sockfd, recv_buf, size_ - last_, 0);
+			if (len <= 0)
+			{
+				CELLLOG_ERROR("read_for_socket:sockfd<%d> nSize<%d> nLast<%d> nLen<%d>", sockfd, size_, last_, len);
+				return SOCKET_ERROR;
+			}
+			last_ += len;
+			return  len;
 		}
-		last_ += len;
-		return  len;
+		
+		return 0;
+			
+		
 	}
 
 	bool has_msg()

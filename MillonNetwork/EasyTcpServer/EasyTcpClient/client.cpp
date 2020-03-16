@@ -49,7 +49,7 @@ const char ip_local[] = "127.0.0.1";
 //const char ip_local[] = "192.168.1.101";
 
 
-class MyClient:public TcpClient
+class MyClient :public TcpClient
 {
 public:
 	MyClient()
@@ -70,8 +70,8 @@ public:
 				if (login->id_ != recv_id_)
 				{
 					// 当前消息与本地消息次数不匹配
-					CellLog::error("on_net_msg socket<%d> id<%d> recv_id<%d>  %d", 
-						pclient_->sockfd(), login->id_, recv_id_, login->id_-recv_id_);
+					CellLog::error("on_net_msg socket<%d> id<%d> recv_id<%d>  %d",
+						pclient_->sockfd(), login->id_, recv_id_, login->id_ - recv_id_);
 				}
 				++recv_id_;
 			}
@@ -126,7 +126,7 @@ public:
 			// 重置计数
 			send_count_ = n_msg;
 		}
-		return send_count_>0;
+		return send_count_ > 0;
 	}
 
 private:
@@ -152,7 +152,7 @@ void work_thread(CellThread* pthread, int id)
 		if (!pthread->is_run())
 			break;
 		clients[n] = new MyClient();
-		// 多线程时
+		// 多线程时让下cpu
 		CellThread::sleep(0);
 	}
 
@@ -197,42 +197,45 @@ void work_thread(CellThread* pthread, int id)
 		dt = t0 - t2;
 		t2 = t0;
 
-		int count = 0;
-		// 每轮每个客户端发送n_msg条数据
-		for (int m = 0; m < n_msg; m++)
 		{
+			int count = 0;
+			// 每轮每个客户端发送n_msg条数据
+			for (int m = 0; m < n_msg; m++)
+			{
+				for (int n = begin; n < end; n++)
+				{
+					// 每个客户端一条一条的写入
+					if (clients[n]->is_run())
+					{
+						if (clients[n]->send_test(&login)>0)
+							++send_count;
+					}
+				}
+			}
+
+
 			for (int n = begin; n < end; n++)
 			{
-				// 每个客户端一条一条的写入
 				if (clients[n]->is_run())
 				{
-					if (clients[n]->send_test(&login)>0)
-						++send_count;
+					if (!clients[n]->on_run(0))
+					{
+						n_connect--;
+						continue;
+					}
+					// 检测发送计数是否要重置
+					clients[n]->check_send(dt);
 				}
+
 			}
 		}
-
-
-		for (int n = begin; n < end; n++)
-		{
-			if (clients[n]->is_run())
-			{
-				if (!clients[n]->on_run(0))
-				{
-					n_connect--;
-					continue;
-				}
-				// 检测发送计数是否要重置
-				clients[n]->check_send(dt);
-			}
-
-		}
+		
 
 		CellThread::sleep(n_worksleep);
 
 	}
 
-	for (int n = begin; n < end;n++)
+	for (int n = begin; n < end; n++)
 	{
 		clients[n]->close_socket();
 		delete clients[n];
@@ -245,16 +248,16 @@ void work_thread(CellThread* pthread, int id)
 
 int main(int argc, char* args[])
 {
-	
-	CellLog::Instance().set_path("client_log.txt", "w", false);
+
+	CellLog::Instance().set_log_path("client_log.txt", "w", false);
 	CellConfig::Instance().init(argc, args);
 
 	ip = CellConfig::Instance().get_str("ip", "127.0.0.1");
 	port = CellConfig::Instance().get_int("port", 4567);
 	n_thread = CellConfig::Instance().get_int("n_thread", 1);
-	n_client = CellConfig::Instance().get_int("n_client", 10);
+	n_client = CellConfig::Instance().get_int("n_client", 10000);
 	n_msg = CellConfig::Instance().get_int("n_msg", 10);
-	n_sendsleep = CellConfig::Instance().get_int("n_sendsleep", 1000);
+	n_sendsleep = CellConfig::Instance().get_int("n_sendsleep", 100);
 	n_worksleep = CellConfig::Instance().get_int("n_worksleep", 1);
 	n_send_buffer_size = CellConfig::Instance().get_int("n_send_buffer_size", SEND_BUFF_SIZE);
 	n_recv_buffer_size = CellConfig::Instance().get_int("n_recv_buffer_size", RECV_BUFF_SIZE);
@@ -262,7 +265,7 @@ int main(int argc, char* args[])
 	// 启动终端命令线程
 	// 用于接受运行时用户输出的命令
 	CellThread tcmd;
-	tcmd.start(nullptr, [=](CellThread* pthread) {
+	tcmd.start(nullptr, [](CellThread* pthread) {
 		while (true)
 		{
 			char buffer[256] = {};
@@ -300,7 +303,7 @@ int main(int argc, char* args[])
 		auto t = timer.get_elapsed_second();
 		if (t >= 1.0)
 		{
-			CellLog::info("thread<%d>,clients<%d>,time<%lf>,send<%d>",n_thread, (int)n_connect, t, (int)send_count);
+			CellLog::info("thread<%d>,clients<%d>,connect<%d>,time<%lf>,send<%d>", n_thread,n_client, (int)n_connect, t, (int)send_count);
 			send_count = 0;
 			timer.update();
 		}
@@ -312,7 +315,7 @@ int main(int argc, char* args[])
 		t->close();
 		delete t;
 	}
-		
+
 
 	CellLog::info("...exit...");
 	return 0;

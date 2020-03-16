@@ -22,14 +22,6 @@
 class CellSignal
 {
 public:
-	CellSignal() 
-	{
-	}
-	~CellSignal() 
-	{
-	
-	}
-
 	void wait()
 	{
 		std::unique_lock<std::mutex> ul(mutex_);

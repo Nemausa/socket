@@ -37,6 +37,9 @@
     <ClInclude Include="..\depends\include\cell_config.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\depends\include\cell_fdset.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\depends\include\cell_log.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

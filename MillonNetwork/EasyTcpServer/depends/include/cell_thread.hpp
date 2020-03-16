@@ -21,7 +21,7 @@ class CellThread
 public:
 	static void sleep(time_t t)
 	{
-		std::chrono::microseconds dura(t);
+		std::chrono::milliseconds dura(t);
 		std::this_thread::sleep_for(dura);
 	}
 private:
@@ -63,10 +63,11 @@ public:
 	void close()
 	{
 		std::lock_guard<std::mutex> lg(mutex_);
-		if (!is_run_)
-			return;
-		is_run_ = false;
-		signal_.wait();
+		if (is_run_)
+		{
+			is_run_ = false;
+			signal_.wait();
+		}
 
 	}
 
@@ -106,7 +107,7 @@ private:
 	EventCall on_destory_;
 	CellSignal signal_;	// 控制线程的终止
 	std::mutex mutex_;	// 改变数据是需要加锁
-	bool is_run_;		// 是否启动运行中
+	bool is_run_ = false;		// 是否启动运行中
 };
 
 

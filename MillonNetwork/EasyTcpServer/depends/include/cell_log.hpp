@@ -23,11 +23,11 @@ class CellLog
 {
 #ifdef _DEBUG
 	#ifndef CELLLOG_DEBUG
-	#define CELLLOG_DEBUG(...) CellLog::debug(__VA_ARGS__)
+		#define CELLLOG_DEBUG(...) CellLog::debug(__VA_ARGS__)
 	#endif // !1
 #else
 	#ifndef CELLLOG_DEBUG
-	#define CELLLOG_DEBUG(...) 
+		#define CELLLOG_DEBUG(...) 
 	#endif // !1
 #endif
 //#define CELLLOG_DEBUG(...) CellLog::debug(__VA_ARGS__)
@@ -39,24 +39,26 @@ class CellLog
 private:
 	CellLog()
 	{
-		log_file_ = nullptr;
 		task_server_.start();
 	}
 
 	~CellLog()
 	{
 		task_server_.close();
-		fclose(log_file_);
-		log_file_ = nullptr;
+		if (log_file_)
+		{
+			fclose(log_file_);
+			log_file_ = nullptr;
+		}
 	}
 public:
 	static CellLog& Instance()
 	{
-		static CellLog log;
-		return log;
+		static CellLog sky;
+		return sky;
 	}
 
-	void set_path(const char* name, const char* mode, bool date)
+	void set_log_path(const char* name, const char* mode, bool date)
 	{
 		if (log_file_)
 		{

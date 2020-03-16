@@ -16,23 +16,21 @@
 */
 
 #ifdef _WIN32
-#define FD_SETSIZE      1024
-#define WIN32_LEAN_AND_MEAN
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <windows.h>
-#include <WinSock2.h>
-#pragma comment(lib,"ws2_32.lib")
+	#define FD_SETSIZE      65535
+	#define WIN32_LEAN_AND_MEAN
+	#define _WINSOCK_DEPRECATED_NO_WARNINGS
+	#include <windows.h>
+	#include <WinSock2.h>
+	#pragma comment(lib,"ws2_32.lib")
 #else//#elif __APPLE__
-#include <unistd.h>  // unix std
-#include <arpa/inet.h>
-#include <string.h>
-#include <signal.h>
-#define SOCKET int
-#define INVALID_SOCKET  (SOCKET)(~0)
-#define SOCKET_ERROR            (-1)
+	#include <unistd.h>  // unix std
+	#include <arpa/inet.h>
+	#include <string.h>
+	#include <signal.h>
 
-//#else
-//#   error "Unknown compiler"
+	#define SOCKET int
+	#define INVALID_SOCKET  (SOCKET)(~0)
+	#define SOCKET_ERROR            (-1)
 #endif
 
 
@@ -47,8 +45,8 @@
 
 // 缓冲区大小
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
-#define SEND_BUFF_SIZE RECV_BUFF_SIZE
+#define RECV_BUFF_SIZE 8192
+#define SEND_BUFF_SIZE 10240
 #endif
 
 #endif  // !CELL_HPP_
